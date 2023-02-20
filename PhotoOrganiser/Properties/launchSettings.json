@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "PhotoOrganiser (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "PhotoOrganiser (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

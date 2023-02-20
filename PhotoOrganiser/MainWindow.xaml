@@ -1,0 +1,162 @@
+<!-- Copyright (c) Microsoft Corporation and Contributors. -->
+<!-- Licensed under the MIT License. -->
+
+<Window
+    x:Class="PhotoOrganiser.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PhotoOrganiser"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    mc:Ignorable="d">
+
+    <Grid RowDefinitions="28,Auto,*">
+        <!--#region Resources -->
+        <Grid.Resources>
+            <Style TargetType="controls:HeaderedContentControl">
+                <Setter Property="HeaderTemplate">
+                    <Setter.Value>
+                        <DataTemplate>
+                            <TextBlock FontWeight="SemiBold" Text="{Binding}"/>
+                        </DataTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            </Style>
+        </Grid.Resources>
+        <!--#endregion-->
+
+        <NavigationView x:Name="nvSample8" Grid.Row="1" Height="460"
+                        PaneDisplayMode="Left"
+                        IsPaneOpen="False"
+                        IsTabStop="False">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Home" Icon="Home" ToolTipService.ToolTip="Home" Tag="SamplePage1"/>
+                <NavigationViewItem Content="Case Management" Icon="AddFriend" ToolTipService.ToolTip="Account" Tag="SamplePage2">
+                    <NavigationViewItem.MenuItems>
+                        <NavigationViewItem Content="New Case" Icon="Add" ToolTipService.ToolTip="New Case" Tag="SamplePage3"/>
+                        <NavigationViewItem Content="Load Case" Icon="Folder" ToolTipService.ToolTip="Load Case" Tag="SamplePage4"/>
+                    </NavigationViewItem.MenuItems>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Evidence Acquisition" Icon="Document" ToolTipService.ToolTip="Document options" SelectsOnInvoked="False">
+                    <NavigationViewItem.MenuItems>
+                        <NavigationViewItem Content="Device Imaging" Icon="Scan" ToolTipService.ToolTip="Create new" Tag="SamplePage5"/>
+                    </NavigationViewItem.MenuItems>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Tools" Icon="Page2" ToolTipService.ToolTip="Document options" SelectsOnInvoked="False">
+                    <NavigationViewItem.MenuItems>
+                        <NavigationViewItem Content="Checksum Verification" Icon="Accept" ToolTipService.ToolTip="Create new" Tag="SamplePage5"/>
+                    </NavigationViewItem.MenuItems>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+            <Frame x:Name="contentFrame8">
+                <!--#region Operations-->
+                <StackPanel>
+                    <Grid
+            Grid.Row="1"
+            Margin="10"
+            ColumnDefinitions="Auto,*"
+            ColumnSpacing="5"
+            RowSpacing="5">
+                        <!-- start button -->
+                        <Button
+                x:Name="StartButton"
+                Grid.Column="0"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Background="{ThemeResource SystemAccentColorDark1}"
+                Click="StartButton_Click"
+                Content="Start"/>
+                        <Grid Grid.Column="1" RowDefinitions="Auto,Auto">
+                            <!-- input folder -->
+                            <controls:HeaderedContentControl Grid.Row="0" Header="Input Folder">
+                                <TextBox IsReadOnly="True" Text="{x:Bind ViewModel.InputFolder.Path, Mode=OneWay}"/>
+                            </controls:HeaderedContentControl>
+                            <!-- output folder -->
+                            <controls:HeaderedContentControl Grid.Row="1" Header="Output Folder">
+                                <TextBox IsReadOnly="True" Text="{x:Bind ViewModel.OutputFolder.Path, Mode=OneWay}"/>
+                            </controls:HeaderedContentControl>
+                        </Grid>
+                    </Grid>
+                    <!--#endregion-->
+
+                    <!--#region Start Settings Dialog -->
+                    <ContentDialog x:Name="StartSettingsDialog" PrimaryButtonText="Start" CloseButtonText="Cancel">
+                        <!--Title Template-->
+                        <ContentDialog.TitleTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Image 
+                            Width="40" 
+                            Height="40" 
+                            Source="Assets/magnet.png"/>
+                                    <TextBlock VerticalAlignment="Center" Text="ForensicX Start Settings"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ContentDialog.TitleTemplate>
+                        <ContentDialog.PrimaryButtonStyle>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="{ThemeResource SystemAccentColorDark1}"/>
+                            </Style>
+                        </ContentDialog.PrimaryButtonStyle>
+                        <StackPanel Orientation="Vertical" Spacing="20">
+                            <!-- Selected Input Folder-->
+                            <controls:HeaderedContentControl Header="Input Folder">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="5">
+                                    <TextBox x:Name="SelectedInputFolderTextBox" Grid.Column="0" IsReadOnly="True"/>
+                                    <Button Grid.Column="1" Click="SelectInputFolderButton_Click" Content="..."/>
+                                </Grid>
+                            </controls:HeaderedContentControl>
+                            <!-- Selected Output Folder-->
+                            <controls:HeaderedContentControl Header="Output Folder">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="5">
+                                    <TextBox x:Name="SelectedOutputFolderTextBox" Grid.Column="0" IsReadOnly="True"/>
+                                    <Button Grid.Column="1" Click="SelectOutputFolderButton_Click" Content="..."/>
+                                </Grid>
+                            </controls:HeaderedContentControl>
+                            <!-- Output Folder Structure -->
+                            <controls:HeaderedContentControl Header="Output Folder Structure">
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox x:Name="CreateYearFolderCheckbox"
+                                  Click="FolderStructureCheckBox_Click"
+                                  Content="Year"
+                                  IsChecked="True"/>
+                                    <CheckBox x:Name="CreateMonthFolderCheckbox"
+                                  Click="FolderStructureCheckBox_Click"
+                                  Content="Month"
+                                  IsChecked="True"/>
+                                    <CheckBox x:Name="CreateDayFolderCheckbox"
+                                  Click="FolderStructureCheckBox_Click"
+                                  Content="Day"
+                                  IsChecked="True"/>
+                                    <CheckBox x:Name="CreateDateFolderCheckbox"
+                                  Click="FolderStructureCheckBox_Click"
+                                  Content="Date"
+                                  IsChecked="True"/>
+                                </StackPanel>
+                            </controls:HeaderedContentControl>
+                            <!-- Output Example -->
+                            <controls:HeaderedContentControl Header="Output Example">
+                                <TextBlock x:Name="ExampleTextBlock" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                            </controls:HeaderedContentControl>
+                        </StackPanel>
+                    </ContentDialog>
+                    <!--#endregion-->
+                </StackPanel>
+            </Frame>
+        </NavigationView>
+
+        <!--#region Title Bar-->
+        <StackPanel
+            x:Name="TitleBar"
+            Grid.Row="0"
+            Margin="0,0,120,0"
+            Background="{ThemeResource AppBarBackgroundThemeBrush}"
+            Orientation="Horizontal">
+            <Image Source="Assets/magnet.png"/>
+            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Text="{x:Bind Title}" FontWeight="SemiBold" FontSize="12"/>
+        </StackPanel>
+        <!--#endregion-->
+    </Grid>
+</Window>
