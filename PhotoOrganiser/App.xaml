@@ -2,10 +2,10 @@
 <!-- Licensed under the MIT License. -->
 
 <Application
-    x:Class="PhotoOrganiser.App"
+    x:Class="ForensicX.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:PhotoOrganiser">
+    xmlns:local="using:ForensicX">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

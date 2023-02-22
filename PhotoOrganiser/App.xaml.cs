@@ -4,9 +4,9 @@
 using CommunityToolkit.Mvvm.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
-using PhotoOrganiser.ViewModels;
+using ForensicX.ViewModels;
 
-namespace PhotoOrganiser;
+namespace ForensicX;
     /// <summary>
     /// Provides application-specific behavior to supplement the default Application class.
     /// </summary>
@@ -19,10 +19,6 @@ namespace PhotoOrganiser;
         public App()
         {
             this.InitializeComponent();
-            Ioc.Default.ConfigureServices(new ServiceCollection()
-                .AddSingleton<MainWindowViewModel>()
-                .BuildServiceProvider()
-                );
         }
 
         /// <summary>

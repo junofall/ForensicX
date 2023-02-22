@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Windows.Storage;
 
-namespace PhotoOrganiser.ViewModels;
+namespace ForensicX.ViewModels;
 
 public partial class MainWindowViewModel : ObservableObject
 {
