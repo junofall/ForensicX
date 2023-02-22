@@ -5,10 +5,45 @@
     xmlns:local="using:ForensicX.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewmodel="using:ForensicX.ViewModels"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-
-    <Grid>
-        <TextBlock Text="This is the Connected Volume List"/>
+    <Page.DataContext>
+        <viewmodel:DeviceListViewModel/>
+    </Page.DataContext>
+    <Grid Margin="18">
+        <StackPanel>
+            <TextBlock Text="Logical Volumes" FontWeight="Bold" FontSize="26"/>
+            <TextBlock Text="Local Disks" Margin="0,12,0,0" FontWeight="SemiBold" FontSize="18"/>
+            <!--#region  Logical Volume Data Template-->
+            <ItemsControl ItemsSource="{Binding LocalHardDisks}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Background="{ThemeResource SystemControlPageBackgroundChromeLowBrush}" Margin="0,10,0,0" CornerRadius="10" MinHeight="40">
+                            <StackPanel Orientation="Horizontal">
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEDA2;" Margin="12,0,0,0"/>
+                                <TextBlock Text="{Binding}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <!--#endregion-->
+            <!--#region  Removable Media-->
+            <TextBlock Text="Removable Storage" Margin="0,12,0,0" FontWeight="SemiBold" FontSize="18"/>
+            <ItemsControl ItemsSource="{Binding RemovableStorageDisks}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Background="{ThemeResource SystemControlPageBackgroundChromeLowBrush}" Margin="0,10,0,0" CornerRadius="10" MinHeight="40">
+                            <StackPanel Orientation="Horizontal">
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE88E;" Margin="12,0,0,0"/>
+                                <TextBlock Text="{Binding}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <!--#endregion-->
+        </StackPanel>
     </Grid>
 </Page>

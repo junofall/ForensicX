@@ -35,9 +35,9 @@
                         <NavigationViewItem Content="Calendar" Icon="Calendar" ToolTipService.ToolTip="Calendar" Tag=""/>
                     </NavigationViewItem.MenuItems>
                 </NavigationViewItem>
-                <NavigationViewItem Content="Document options" Icon="Page2" ToolTipService.ToolTip="Document options" SelectsOnInvoked="False">
+                <NavigationViewItem Content="Tools" Icon="Page2" ToolTipService.ToolTip="Document options" SelectsOnInvoked="False">
                     <NavigationViewItem.MenuItems>
-                        <NavigationViewItem Content="Create new" Icon="NewFolder" ToolTipService.ToolTip="Create new" Tag=""/>
+                        <NavigationViewItem Content="Logical Volumes" Icon="MapDrive" ToolTipService.ToolTip="Logical Volumes" Tag="DeviceListView"/>
                         <NavigationViewItem Content="Upload file" Icon="OpenLocal" ToolTipService.ToolTip="Upload file" Tag=""/>
                     </NavigationViewItem.MenuItems>
                 </NavigationViewItem>
