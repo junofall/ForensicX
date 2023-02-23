@@ -29,7 +29,7 @@
         <NavigationView x:Name="shellNavigation" SelectionChanged="shellNavigation_SelectionChanged" Grid.Row="2" IsPaneOpen="False">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Home" Icon="Home" ToolTipService.ToolTip="Home" Tag="HomeView"/>
-                <NavigationViewItem Content="Account" Icon="Contact" ToolTipService.ToolTip="Account" Tag="FileDetailsView">
+                <NavigationViewItem Content="Case Management" Icon="Contact" ToolTipService.ToolTip="Account" Tag="FileDetailsView">
                     <NavigationViewItem.MenuItems>
                         <NavigationViewItem Content="Mail" Icon="Mail" ToolTipService.ToolTip="Mail" Tag=""/>
                         <NavigationViewItem Content="Calendar" Icon="Calendar" ToolTipService.ToolTip="Calendar" Tag=""/>
@@ -37,8 +37,7 @@
                 </NavigationViewItem>
                 <NavigationViewItem Content="Tools" Icon="Page2" ToolTipService.ToolTip="Document options" SelectsOnInvoked="False">
                     <NavigationViewItem.MenuItems>
-                        <NavigationViewItem Content="Logical Volumes" Icon="MapDrive" ToolTipService.ToolTip="Logical Volumes" Tag="DeviceListView"/>
-                        <NavigationViewItem Content="Upload file" Icon="OpenLocal" ToolTipService.ToolTip="Upload file" Tag=""/>
+                        <NavigationViewItem Content="Disks" Icon="MapDrive" ToolTipService.ToolTip="Logical Volumes" Tag="DeviceListView"/>
                     </NavigationViewItem.MenuItems>
                 </NavigationViewItem>
             </NavigationView.MenuItems>

@@ -15,59 +15,76 @@ namespace ForensicX.ViewModels
 {
     public class DeviceListViewModel : ObservableObject
     {
-        public ObservableCollection<Disk> LocalHardDisks { get; }
-        public ObservableCollection<Disk> RemovableStorageDisks { get; }
+        public ObservableCollection<PhysicalDisk> PhysicalDisks { get; }
 
         public DeviceListViewModel()
         {
-            LocalHardDisks = new ObservableCollection<Disk>();
-            RemovableStorageDisks = new ObservableCollection<Disk>();
-            LoadLogicalVolumes();
+            PhysicalDisks = new ObservableCollection<PhysicalDisk>();
+            LoadDisks(); // Loads all disks every time the view is loaded - not optimal. Should be loaded into memory once, preferably at startup? and updated as required.
         }
 
-        private void LoadLogicalVolumes()
+        private void LoadDisks()
         {
-            string query = "SELECT * FROM Win32_LogicalDisk";
+            string query = "SELECT * FROM Win32_DiskDrive"; // Manually validate query via wbemtest.exe, connect... to 'root\cimv2'
 
             using (var searcher = new ManagementObjectSearcher(query))
             using (var results = searcher.Get())
             {
-                int i = 0;
                 foreach (var disk in results)
                 {
-                    string volumeName = (string)disk.GetPropertyValue("VolumeName");
-                    var mediaType = disk.GetPropertyValue("MediaType");
-
-                    if (string.IsNullOrEmpty(volumeName))
+                    var physicalDisk = new PhysicalDisk
                     {
-                        volumeName = $"Local Drive {LocalHardDisks.Count}"; // If the device has no label, we'll just call it 'Local Drive X'
-                    }
-
-                    Disk d = new()
-                    {
-                        VolumeName = volumeName,
-                        Name = (string)disk.GetPropertyValue("Name"),
                         DeviceID = (string)disk.GetPropertyValue("DeviceID"),
-                        FileSystem = (string)disk.GetPropertyValue("FileSystem"),
+                        Model = (string)disk.GetPropertyValue("Model"),
+                        SerialNumber = (string)disk.GetPropertyValue("SerialNumber"),
                         Size = (ulong)disk.GetPropertyValue("Size"),
-                        FreeSpace = (ulong)disk.GetPropertyValue("FreeSpace"),
-                        PercentageUsed = (int)Math.Floor((1 - ((double)(ulong)disk.GetPropertyValue("FreeSpace") / (double)(ulong)disk.GetPropertyValue("Size"))) * 100),
-                        Description = (string)disk.GetPropertyValue("Description"),
-                        
+                        LogicalVolumes = new List<LogicalVolume>(),
+                        MediaType = (string)disk.GetPropertyValue("MediaType")
                     };
 
-                    using (var searcher2 = new ManagementObjectSearcher($"SELECT * FROM MSStorageDriver_ATAPISmartData WHERE InstanceName='\\'\\\\\\{d.DeviceID}\\\\{d.Name}\\\\'\""))
+                    // Get the logical volumes for the physical disk
+                    string assocClass = "Win32_DiskDriveToDiskPartition";
+                    string query2 = $"ASSOCIATORS OF {{Win32_DiskDrive.DeviceID='{physicalDisk.DeviceID}'}} WHERE AssocClass = {assocClass}";
+
+                    using (var searcher2 = new ManagementObjectSearcher(query2))
                     using (var results2 = searcher2.Get())
                     {
-                        foreach (var driveData in results2)
+                        foreach (var partition in results2)
                         {
-                            d.Model = (string)driveData.GetPropertyValue("VendorSpecific");
-                            var serialNumber = (byte[])driveData.GetPropertyValue("SerialNumber");
-                            d.serialNumber = Encoding.ASCII.GetString(serialNumber);
+                            string query3 = $"ASSOCIATORS OF {{Win32_DiskPartition.DeviceID='{partition["DeviceID"]}'}} WHERE AssocClass = Win32_LogicalDiskToPartition";
+
+                            using (var searcher3 = new ManagementObjectSearcher(query3))
+                            using (var results3 = searcher3.Get())
+                            {
+                                foreach (var volume in results3)
+                                {
+                                    // Get the starting offset for the volume
+                                    ulong startingOffset = 0;
+                                    using (var partitionObj = new ManagementObject($"Win32_DiskPartition.DeviceID='{partition["DeviceID"]}'"))
+                                    {
+                                        startingOffset = (ulong)partitionObj.GetPropertyValue("StartingOffset");
+                                    }
+                                    //
+
+                                    var logicalVolume = new LogicalVolume
+                                    {
+                                        DeviceID = (string)volume.GetPropertyValue("DeviceID"),
+                                        VolumeName = (string)volume.GetPropertyValue("VolumeName"),
+                                        FileSystem = (string)volume.GetPropertyValue("FileSystem"),
+                                        Size = (ulong)volume.GetPropertyValue("Size"),
+                                        FreeSpace = (ulong)volume.GetPropertyValue("FreeSpace"),
+                                        PercentageUsed = (int)Math.Floor((1 - ((double)(ulong)volume.GetPropertyValue("FreeSpace") / (double)(ulong)volume.GetPropertyValue("Size"))) * 100),
+                                        StartingOffset = startingOffset
+                                        
+                                    };
+                                    physicalDisk.LogicalVolumes.Add(logicalVolume);
+                                }
+                            }
                         }
                     }
 
-                    LocalHardDisks.Add(d);
+                    string query4 = $"ASSOCIATORS OF {{Win32_DiskDrive.DeviceID='{physicalDisk.DeviceID}'}} WHERE AssocClass = {assocClass}";
+                    PhysicalDisks.Add(physicalDisk);
                 }
             }
         }
