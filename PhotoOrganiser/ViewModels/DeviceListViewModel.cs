@@ -8,63 +8,67 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.WinUI.UI.Converters;
+using ForensicX.Models;
+using ForensicX.Helpers;
 
 namespace ForensicX.ViewModels
 {
     public class DeviceListViewModel : ObservableObject
     {
-        public ObservableCollection<string> LocalHardDisks { get; }
-        public ObservableCollection<string> RemovableStorageDisks { get; }
+        public ObservableCollection<Disk> LocalHardDisks { get; }
+        public ObservableCollection<Disk> RemovableStorageDisks { get; }
 
         public DeviceListViewModel()
         {
-            LocalHardDisks = new ObservableCollection<string>();
-            RemovableStorageDisks = new ObservableCollection<string>();
-
+            LocalHardDisks = new ObservableCollection<Disk>();
+            RemovableStorageDisks = new ObservableCollection<Disk>();
             LoadLogicalVolumes();
         }
 
         private void LoadLogicalVolumes()
         {
-            string query_lhd = "SELECT * FROM Win32_LogicalDisk WHERE DriveType=3"; // 3 = local hard disks
-            string query_rm = "SELECT * FROM Win32_LogicalDisk WHERE DriveType=2"; // 2 = removable media
+            string query = "SELECT * FROM Win32_LogicalDisk";
 
-            using (var searcher = new ManagementObjectSearcher(query_lhd))
+            using (var searcher = new ManagementObjectSearcher(query))
             using (var results = searcher.Get())
             {
+                int i = 0;
                 foreach (var disk in results)
                 {
                     string volumeName = (string)disk.GetPropertyValue("VolumeName");
+                    var mediaType = disk.GetPropertyValue("MediaType");
 
                     if (string.IsNullOrEmpty(volumeName))
                     {
                         volumeName = $"Local Drive {LocalHardDisks.Count}"; // If the device has no label, we'll just call it 'Local Drive X'
                     }
-                    
-                    LocalHardDisks.Add(volumeName + " (" + (string)disk.GetPropertyValue("Name") + ")"); // Append the logical drive letter to the volume name
-                }
-            }
 
-
-            using (var searcher = new ManagementObjectSearcher(query_rm))
-            using (var results = searcher.Get())
-            {
-                foreach (var disk in results)
-                {
-                    string volumeName = (string)disk.GetPropertyValue("VolumeName");
-
-                    if (string.IsNullOrEmpty(volumeName))
+                    Disk d = new()
                     {
-                        volumeName = $"Removable Storage Device {LocalHardDisks.Count}";
+                        VolumeName = volumeName,
+                        Name = (string)disk.GetPropertyValue("Name"),
+                        DeviceID = (string)disk.GetPropertyValue("DeviceID"),
+                        FileSystem = (string)disk.GetPropertyValue("FileSystem"),
+                        Size = (ulong)disk.GetPropertyValue("Size"),
+                        FreeSpace = (ulong)disk.GetPropertyValue("FreeSpace"),
+                        PercentageUsed = (int)Math.Floor((1 - ((double)(ulong)disk.GetPropertyValue("FreeSpace") / (double)(ulong)disk.GetPropertyValue("Size"))) * 100),
+                        Description = (string)disk.GetPropertyValue("Description"),
+                        
+                    };
+
+                    using (var searcher2 = new ManagementObjectSearcher($"SELECT * FROM MSStorageDriver_ATAPISmartData WHERE InstanceName='\\'\\\\\\{d.DeviceID}\\\\{d.Name}\\\\'\""))
+                    using (var results2 = searcher2.Get())
+                    {
+                        foreach (var driveData in results2)
+                        {
+                            d.Model = (string)driveData.GetPropertyValue("VendorSpecific");
+                            var serialNumber = (byte[])driveData.GetPropertyValue("SerialNumber");
+                            d.serialNumber = Encoding.ASCII.GetString(serialNumber);
+                        }
                     }
 
-                    RemovableStorageDisks.Add(volumeName + " (" + (string)disk.GetPropertyValue("Name") + ")");
+                    LocalHardDisks.Add(d);
                 }
-            }
-
-            if(RemovableStorageDisks.Count == 0)
-            {
-                RemovableStorageDisks.Add("No removable media connected.");
             }
         }
     }
