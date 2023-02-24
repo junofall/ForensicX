@@ -10,21 +10,31 @@ using System.Threading.Tasks;
 using CommunityToolkit.WinUI.UI.Converters;
 using ForensicX.Models;
 using ForensicX.Helpers;
+using System.Windows.Input;
+using CommunityToolkit.Mvvm.Input;
+using ForensicX.Services;
 
 namespace ForensicX.ViewModels
 {
     public class DeviceListViewModel : ObservableObject
     {
+        private readonly DeviceWatcherService _deviceWatcherService;
         public ObservableCollection<PhysicalDisk> PhysicalDisks { get; }
+        public ICommand LoadDisksCommand { get; }
 
         public DeviceListViewModel()
         {
             PhysicalDisks = new ObservableCollection<PhysicalDisk>();
-            LoadDisks(); // Loads all disks every time the view is loaded - not optimal. Should be loaded into memory once, preferably at startup? and updated as required.
+            LoadDisksCommand = new RelayCommand(LoadDisks);
+            LoadDisks();
+
+            _deviceWatcherService = new DeviceWatcherService();
+            _deviceWatcherService.DeviceChanged += DeviceWatcher_OnDeviceChanged;
         }
 
         private void LoadDisks()
         {
+            PhysicalDisks.Clear();
             string query = "SELECT * FROM Win32_DiskDrive"; // Manually validate query via wbemtest.exe, connect... to 'root\cimv2'
 
             using (var searcher = new ManagementObjectSearcher(query))
@@ -82,11 +92,22 @@ namespace ForensicX.ViewModels
                             }
                         }
                     }
-
-                    string query4 = $"ASSOCIATORS OF {{Win32_DiskDrive.DeviceID='{physicalDisk.DeviceID}'}} WHERE AssocClass = {assocClass}";
                     PhysicalDisks.Add(physicalDisk);
                 }
             }
+        }
+
+        private void DeviceWatcher_OnDeviceChanged(object sender, EventArgs e)
+        {
+            // Handle device change event here
+            // Reload disks or do other necessary actions
+            LoadDisks();
+        }
+
+        public void DeviceWatcher_Dispose()
+        {
+            _deviceWatcherService.DeviceChanged -= DeviceWatcher_OnDeviceChanged;
+            _deviceWatcherService.Stop();
         }
     }
 }

@@ -4,16 +4,17 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap rescap">
+  xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
+  IgnorableNamespaces="uap rescap mp">
 
   <Identity
-    Name="3979aa33-07a3-4d9f-9ec3-1edaf940041f"
-    Publisher="CN=juno"
-    Version="1.0.0.0" />
+    Name="46187Junofall.ForensicX"
+    Publisher="CN=4FBF34CB-1FFC-4358-832C-2B8235D1077D"
+    Version="0.1.0.0" />
 
   <Properties>
-    <DisplayName>PhotoOrganiser</DisplayName>
-    <PublisherDisplayName>juno</PublisherDisplayName>
+    <DisplayName>ForensicX</DisplayName>
+    <PublisherDisplayName>Junofall</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -31,12 +32,12 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="PhotoOrganiser"
-        Description="PhotoOrganiser"
+        DisplayName="ForensicX"
+        Description="A digital forensics toolkit."
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
     </Application>

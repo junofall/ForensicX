@@ -8,7 +8,7 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid Background="{ThemeResource AppBarBackgroundThemeBrush}">
+    <Grid>
         <TextBlock Text="This is the home view"/>
     </Grid>
 </Page>
