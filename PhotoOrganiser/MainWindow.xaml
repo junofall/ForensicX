@@ -42,7 +42,7 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
             <!--#region Views -->
-            <Frame x:Name="shellFrame"/>
+            <Frame x:Name="shellFrame" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"/>
             <!--#endregion-->
         </NavigationView>
         <!--#region Title Bar-->
