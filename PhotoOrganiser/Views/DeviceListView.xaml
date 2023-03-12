@@ -43,7 +43,7 @@
                                     <!--Navigate up the content tree to get the DataContext of 'Page', i.e. the ViewModel-->
                                     <StackPanel Orientation="Horizontal">
                                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe928;"/>
-                                        <TextBlock Text="Image Disk..." Margin="8,0,0,0"/>
+                                        <TextBlock Text="Create Disk Image..." Margin="8,0,0,0"/>
                                     </StackPanel>
                                 </Button>
                             </StackPanel>

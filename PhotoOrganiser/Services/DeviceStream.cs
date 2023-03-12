@@ -73,16 +73,15 @@ namespace ForensicX.Services
 
         private SafeFileHandle handleValue = null;
         private FileStream _fs = null;
-        private long length = 0;
+        private readonly long length = 0;
 
         public DeviceStream(string device)
         {
             Load(device);
 
             // Retrieve disk geometry information
-            DISK_GEOMETRY_EX geometry = new DISK_GEOMETRY_EX();
-            int bytesReturned = 0;
-            bool success = DeviceIoControl(handleValue, IOCTL_DISK_GET_DRIVE_GEOMETRY_EX, IntPtr.Zero, 0, ref geometry, Marshal.SizeOf(geometry), out bytesReturned, IntPtr.Zero);
+            DISK_GEOMETRY_EX geometry = new();
+            bool success = DeviceIoControl(handleValue, IOCTL_DISK_GET_DRIVE_GEOMETRY_EX, IntPtr.Zero, 0, ref geometry, Marshal.SizeOf(geometry), out int bytesReturned, IntPtr.Zero);
 
             if (!success)
             {
@@ -96,7 +95,7 @@ namespace ForensicX.Services
         {
             if (string.IsNullOrEmpty(Path))
             {
-                throw new ArgumentNullException("Path");
+                throw new ArgumentNullException(nameof(Path));
             }
 
             // Try to open the file.

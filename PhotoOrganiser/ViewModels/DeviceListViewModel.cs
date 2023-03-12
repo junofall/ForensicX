@@ -3,25 +3,16 @@ using System;
 using System.Collections.Generic;
 using System.Management;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Threading;
-using System.Security.Permissions;
-using System.Security.Principal;
-using CommunityToolkit.WinUI.UI.Converters;
 using ForensicX.Models;
-using ForensicX.Helpers;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
 using ForensicX.Services;
 using Windows.ApplicationModel.Core;
-using Windows.UI.Core;
 using System.Diagnostics;
 using System.IO;
-using System.Data;
-using System.Security.Permissions;
+using System.Security.Cryptography;
 
 namespace ForensicX.ViewModels
 {
@@ -132,35 +123,8 @@ namespace ForensicX.ViewModels
 
         private async Task ImageDisk(string sourceDiskPath)
         {
-            //// TODO: Open the popup dialogue to get the source and destination disk paths
-            string source = sourceDiskPath;
-            string destination = "F:\\ForensicX\\image.bin"; // replace with the path entered by the user
-
-            int chunkSize = 1024 * 1024; // 1 MB
-
-            // Open the source and destination disks as FileStreams
-            using (var sourceStream = new FileStream(@sourceDiskPath, FileMode.Open, FileAccess.Read))
-            using (var destinationStream = new FileStream(destination, FileMode.Create, FileAccess.Write))
-            {
-                byte[] buffer = new byte[chunkSize];
-                int bytesRead = 0;
-
-                // Read and write the disk contents in chunks
-                while ((bytesRead = sourceStream.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    destinationStream.Write(buffer, 0, bytesRead);
-                }
-            }
-
-            if (sourceDiskPath != null)
-            {
-                Debug.WriteLine("ImageDisk: sourceDiskPath is: " + source);
-            }
-            else
-            {
-                Debug.WriteLine("ImageDisk: sourceDiskPath was null.");
-            }
-            Debug.WriteLine("ImageDisk: Done!");
+            //// TODO: Open a popup dialogue to get the source and destination disk paths
+            
         }
     }
 }
