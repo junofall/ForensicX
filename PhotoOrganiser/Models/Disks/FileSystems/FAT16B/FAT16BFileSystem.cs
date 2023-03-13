@@ -1,4 +1,5 @@
-﻿using ForensicX.Models.Disks.FileSystems.FAT16B.Components;
+﻿using ForensicX.Helpers;
+using ForensicX.Models.Disks.FileSystems.FAT16B.Components;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -34,7 +35,7 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
                 StartSector = RootDirectoryRegion.StartSector + ((ulong)vbr.RootEntryCount * 32 / ParentDisk.SectorSize)
             };
 
-            LogicalVolumePrinter.PrintRootDirectory(RootDirectoryRegion);
+            //LogicalVolumePrinter.PrintRootDirectory(RootDirectoryRegion);
 
             var imageRootDirectoryPath = Path.Combine(ParentDisk.DiskName, $"Partition {ParentPartition.PartitionNumber}", ParentVolume.Name, "[root]");
 
@@ -162,8 +163,8 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
 
         public List<FileEntry> GetFileEntries(byte[] directoryBytes)
         {
-            List<FileEntry> fileEntries = new List<FileEntry>();
-            List<LongFilenameDirectoryEntry> LongEntryStash = new List<LongFilenameDirectoryEntry>(); // Hold the previous long entries so we can collate them.
+            List<FileEntry> fileEntries = new();
+            List<LongFilenameDirectoryEntry> LongEntryStash = new(); // Hold the previous long entries so we can collate them.
 
             for (int offset = 0; offset < directoryBytes.Length; offset += 32)
             {
@@ -247,7 +248,7 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
                         int lastDotIndex = fileEntry.FileName.LastIndexOf('.');
                         if (lastDotIndex >= 0)
                         {
-                            fileEntry.FileName = fileEntry.FileName.Substring(0, lastDotIndex) + fileEntry.FileName.Substring(lastDotIndex + 1);
+                            fileEntry.FileName = string.Concat(fileEntry.FileName.AsSpan(0, lastDotIndex), fileEntry.FileName.AsSpan(lastDotIndex + 1));
                         }
                         ulong rootDirStartSec = ParentPartition.PhysicalSectorOffset + vbr.ReservedSectorCount + (ulong)(vbr.NumberOfFats * vbr.SectorsPerFat16);
                         ulong dataRegionStartSec = rootDirStartSec + ((ulong)vbr.RootEntryCount * 32 / ParentDisk.SectorSize);
@@ -269,7 +270,7 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
             return fileEntries;
         }
 
-        public void PrintVbr(VolumeBootRecord vbr)
+        public static void PrintVbr(VolumeBootRecord vbr)
         {
             Console.WriteLine("==========VOLUME BOOT RECORD==========");
             Console.WriteLine($"X86JumpInstruction: {BitConverter.ToString(vbr.X86JumpInstruction)}");
@@ -319,56 +320,50 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
                 }
                 else
                 {
-                    using (var stream = new FileStream(ParentDisk.ImagePath, FileMode.Open, FileAccess.Read))
+                    using var stream = new FileStream(ParentDisk.ImagePath, FileMode.Open, FileAccess.Read);
+                    (byte[] fileData, string md5, string sha1) = Fat16BFileExtractor.ExtractFileFromClusterChain(file.ClusterChain, firstDataSector, (uint)file.FileSize, stream, vbr, DataRegion.StartSector);
+
+                    //Debug.WriteLine("Buffer Hashes:");
+                    //Debug.WriteLine("MD5: " + md5);
+                    //Debug.WriteLine("SHA1: " + sha1);
+
+                    //Debug.WriteLine("ExtractFile 'ELSE' @FAT16B - Directory Path: " + directoryPath);
+                    //Debug.WriteLine("ExtractFile 'ELSE' @FAT16B - Directory Path Combined: " + directoryPath);
+
+                    if (!Directory.Exists(directoryPath))
                     {
-                        (byte[] fileData, string md5, string sha1) = Fat16BFileExtractor.ExtractFileFromClusterChain(file.ClusterChain, firstDataSector, (uint)file.FileSize, stream, vbr, DataRegion.StartSector);
+                        Directory.CreateDirectory(directoryPath);
+                    }
 
-                        //Debug.WriteLine("Buffer Hashes:");
-                        //Debug.WriteLine("MD5: " + md5);
-                        //Debug.WriteLine("SHA1: " + sha1);
+                    var filePath = Path.Combine(ParentVolume.Name, directoryPath, Path.GetFileName(file.FileName));
+                    //Debug.WriteLine("ExtractFile 'ELSE' @FAT16B - File Path: " + filePath);
+                    //Debug.WriteLine($"SPC: {vbr.SectorsPerCluster}, BPS: {vbr.BytesPerSector}");
+                    //Debug.WriteLine(filePath);
+                    File.WriteAllBytes(filePath, fileData);
 
-                        //Debug.WriteLine("ExtractFile 'ELSE' @FAT16B - Directory Path: " + directoryPath);
-                        //Debug.WriteLine("ExtractFile 'ELSE' @FAT16B - Directory Path Combined: " + directoryPath);
+                    // Read the file back into a byte array
+                    byte[] writtenFile = File.ReadAllBytes(filePath);
 
-                        if (!Directory.Exists(directoryPath))
-                        {
-                            Directory.CreateDirectory(directoryPath);
-                        }
-
-                        var filePath = Path.Combine(ParentVolume.Name, directoryPath, Path.GetFileName(file.FileName));
-                        //Debug.WriteLine("ExtractFile 'ELSE' @FAT16B - File Path: " + filePath);
-                        //Debug.WriteLine($"SPC: {vbr.SectorsPerCluster}, BPS: {vbr.BytesPerSector}");
-                        //Debug.WriteLine(filePath);
-                        File.WriteAllBytes(filePath, fileData);
-
-                        // Read the file back into a byte array
-                        byte[] writtenFile = File.ReadAllBytes(filePath);
-
-                        // Calculate the MD5 and SHA1 hash values for the written file
-                        using (var md5Hash = MD5.Create())
-                        {
-                            byte[] hashBytes = md5Hash.ComputeHash(writtenFile);
-                            string writtenFileMd5 = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-                            //Debug.WriteLine($"Written File MD5: {writtenFileMd5}");
+                    // Calculate the MD5 and SHA1 hash values for the written file
+                    using var md5Hash = MD5.Create();
+                    byte[] hashBytes = md5Hash.ComputeHash(writtenFile);
+                    string writtenFileMd5 = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+                    //Debug.WriteLine($"Written File MD5: {writtenFileMd5}");
 
 
-                            using (var sha1Hash = SHA1.Create())
-                            {
-                                byte[] hashBytes2 = sha1Hash.ComputeHash(writtenFile);
-                                string writtenFileSha1 = BitConverter.ToString(hashBytes2).Replace("-", "").ToLower();
-                                //Debug.WriteLine($"Written File SHA1: {writtenFileSha1}");
+                    using var sha1Hash = SHA1.Create();
+                    byte[] hashBytes2 = sha1Hash.ComputeHash(writtenFile);
+                    string writtenFileSha1 = BitConverter.ToString(hashBytes2).Replace("-", "").ToLower();
+                    //Debug.WriteLine($"Written File SHA1: {writtenFileSha1}");
 
-                                // Compare the hash values of the original file buffer and the written file
-                                if (md5 == writtenFileMd5 && sha1 == writtenFileSha1)
-                                {
-                                    Debug.WriteLine("Hash values match. The file was written correctly.");
-                                }
-                                else
-                                {
-                                    Debug.WriteLine("Hash values do not match. There was an error writing the file.");
-                                }
-                            }
-                        }
+                    // Compare the hash values of the original file buffer and the written file
+                    if (md5 == writtenFileMd5 && sha1 == writtenFileSha1)
+                    {
+                        Debug.WriteLine("Hash values match. The file was written correctly.");
+                    }
+                    else
+                    {
+                        Debug.WriteLine("Hash values do not match. There was an error writing the file.");
                     }
                 }
             }

@@ -13,25 +13,24 @@ namespace ForensicX.Services
 {
     public class DiskImager
     {
-        public string SourceDevicePath { get; set; }
-        public string TargetFilePath { get; set; }
+        private string SourceDevicePath { get; set; }
+        private string TargetFilePath { get; set; }
         public int BufferSize { get; set; } = 1024 * 1024; // Buffer defaults to 1 MB.
 
         private CancellationTokenSource _cancellationTokenSource;
 
-        public DiskImager() 
+        public DiskImager(string sourceDevicePath, string targetFilePath) 
         {
-
+            SourceDevicePath = sourceDevicePath;
+            TargetFilePath = targetFilePath;
         }
 
-        public void Copy(string sourceDevicePath, string targetFilePath, CancellationToken cancellationToken)
+        public void Copy(CancellationToken cancellationToken)
         {
             const int bufferSize = 1024 * 1024; // 1 meg buffer
-            string deviceSourcePath = @"\\.\PHYSICALDRIVE3";
-            string fileTargetPath = @"F:\SanDisk_AndAnotherOne.001";
 
-            using (var reader = new BinaryReader(new DeviceStream(deviceSourcePath)))
-            using (var writer = new BinaryWriter(new FileStream(fileTargetPath, FileMode.Create)))
+            using (var reader = new BinaryReader(new DeviceStream(SourceDevicePath)))
+            using (var writer = new BinaryWriter(new FileStream(TargetFilePath, FileMode.Create)))
             {
                 var buffer = new byte[bufferSize];
                 long streamLength = reader.BaseStream.Length;
@@ -39,8 +38,8 @@ namespace ForensicX.Services
                 int bytesRead;
                 long totalBytesRead = 0;
 
-                Debug.WriteLine($"Source Path: {deviceSourcePath}");
-                Debug.WriteLine($"Destination: {fileTargetPath}");
+                Debug.WriteLine($"Source Path: {SourceDevicePath}");
+                Debug.WriteLine($"Destination: {TargetFilePath}");
                 Debug.WriteLine($"Now copying {streamLength} bytes...");
 
                 using (var md5 = MD5.Create())
@@ -84,7 +83,7 @@ namespace ForensicX.Services
                         reader.Close();
                         writer.Close();
 
-                        Debug.WriteLine($"Imaging done. {totalBytesRead} bytes written to {fileTargetPath}");
+                        Debug.WriteLine($"Imaging done. {totalBytesRead} bytes written to {TargetFilePath}");
 
                         byte[] source_md5Hash = md5.Hash;
                         byte[] source_sha1Hash = sha1.Hash;
@@ -95,7 +94,7 @@ namespace ForensicX.Services
 
                         // Validate checksums by reading the source again.
                         Debug.WriteLine("Validating Checksums...");
-                        using (var targetReader = new BinaryReader(new FileStream(fileTargetPath, FileMode.Open)))
+                        using (var targetReader = new BinaryReader(new FileStream(TargetFilePath, FileMode.Open)))
                         {
                             var targetBuffer = new byte[100 * 1024 * 1024]; // 100 MB read buffer
                             long totalTargetBytesRead = 0;
@@ -148,11 +147,11 @@ namespace ForensicX.Services
             }
         }
 
-        public async Task Start(string sourceDevicePath, string targetFilePath)
+        public async Task Start()
         {
             _cancellationTokenSource = new CancellationTokenSource();
 
-            await Task.Run(() => Copy(sourceDevicePath, targetFilePath, _cancellationTokenSource.Token));
+            await Task.Run(() => Copy(_cancellationTokenSource.Token));
         }
 
         public void Abort()

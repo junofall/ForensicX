@@ -1,0 +1,26 @@
+﻿<Page
+    x:Class="ForensicX.Views.EvidenceView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ForensicX.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:viewmodel="using:ForensicX.ViewModels"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.DataContext>
+        <viewmodel:EvidenceViewModel/>
+    </Page.DataContext>
+
+    <ScrollViewer>
+        <StackPanel Orientation="Vertical" Margin="15,45,15,15">
+            <StackPanel Orientation="Horizontal" Margin="10">
+                <TextBlock Text="Evidence" FontWeight="Bold" FontSize="32"/>
+            </StackPanel>
+            <Grid>
+                <TextBlock Text="Stuff"/>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

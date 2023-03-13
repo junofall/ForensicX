@@ -3,6 +3,9 @@ using System.Runtime.InteropServices;
 using System.IO;
 using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using Microsoft.Graphics.Canvas.Text;
 
 namespace ForensicX.Services
 {
@@ -102,7 +105,17 @@ namespace ForensicX.Services
             IntPtr ptr = CreateFile(Path, GENERIC_READ, FILE_SHARE_READ, IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
 
             handleValue = new SafeFileHandle(ptr, true);
-            _fs = new FileStream(handleValue, FileAccess.Read);
+            try
+            {
+                _fs = new FileStream(handleValue, FileAccess.Read);
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine("Invalid handle. Is the program running with administrative rights?");
+                Debug.WriteLine($"{handleValue.ToString()}");
+                Debug.WriteLine(Path);
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
 
             // If the handle is invalid,
             // get the last Win32 error 

@@ -4,7 +4,7 @@
     <TargetFramework>net6.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>ForensicX</RootNamespace>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationManifest>app1.manifest</ApplicationManifest>
     <Platforms>x86;x64;ARM64</Platforms>
     <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
     <PublishProfile>win10-$(Platform).pubxml</PublishProfile>
@@ -23,11 +23,14 @@
     <AppxBundle>Always</AppxBundle>
     <AppxBundlePlatforms>x86|x64</AppxBundlePlatforms>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-    <AppxPackageDir>C:\Users\johnm\Documents\ForensicX-Package\</AppxPackageDir>
+    <AppxPackageDir>C:\Users\johnm\Documents\ForensicX-Package-Test\</AppxPackageDir>
     <GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
+	<WindowsAppSDKSelfContained>True</WindowsAppSDKSelfContained>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Views\FileDetailsView.xaml" />
+    <None Remove="Controls\Dialogs\ImageDiskDialogContent.xaml" />
+    <None Remove="Controls\Loading\DiskLoadingAnimation.xaml" />
+    <None Remove="Views\EvidenceView.xaml" />
     <None Remove="Views\HomeView.xaml" />
     <None Remove="Views\SettingsView.xaml" />
   </ItemGroup>
@@ -75,7 +78,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Views\FileDetailsView.xaml">
+    <Page Update="Views\EvidenceView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
@@ -90,8 +93,19 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Assets\Icons\" />
     <Folder Include="Models\Disks\FileSystems\FAT32\Components\" />
     <Folder Include="Models\Disks\FileSystems\NTFS\Components\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\Dialogs\ImageDiskDialogContent.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\Loading\DiskLoadingAnimation.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
   <!-- 

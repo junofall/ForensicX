@@ -7,6 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewmodel="using:ForensicX.ViewModels" xmlns:helpers="using:ForensicX.Helpers"
+    xmlns:dialog="using:ForensicX.Controls.Dialogs"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
     <Page.DataContext>
@@ -27,26 +28,32 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <StackPanel>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,20,0,0">
-                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xeda2;"/>
-                                <TextBlock Text="{Binding Model}" FontSize="18" FontWeight="Bold" Margin="10"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding DeviceID}" FontSize="12" FontWeight="SemiLight" Margin="0,0,0,10" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}"/>
-                                <TextBlock Text="{Binding MediaType}" FontSize="12" FontWeight="SemiLight" Margin="15,0,0,10" Foreground="{ThemeResource SystemBaseHighColor}"/>
-                                <TextBlock Text="{Binding Size, Converter={StaticResource FileSizeConverter}}" FontSize="12" FontWeight="SemiLight" Margin="15,0,0,0"/>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Serial:" FontSize="12" FontWeight="SemiLight" Margin="15,0,0,0" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}"/>
-                                    <TextBlock Text="{Binding SerialNumber}" FontSize="12" FontWeight="Bold" Margin="5,0,0,0" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}"/>
-                                </StackPanel>
-                                <Button Grid.Column="2" x:Name="Extract" Command="{Binding DataContext.ImageDiskCommand, ElementName=PDiskList}" CommandParameter="{Binding DeviceID}">
-                                    <!--Navigate up the content tree to get the DataContext of 'Page', i.e. the ViewModel-->
+                            <Grid VerticalAlignment="Center" Margin="0,20,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <FontIcon Grid.Column="0" FontFamily="Segoe Fluent Icons" Glyph="&#xeda2;"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Model}" FontSize="18" FontWeight="Bold" Margin="10,4,0,0"/>
+                                <Button Grid.Column="2" x:Name="Extract" Click="ShowDialog_Click" Margin="20,0,0,0">
                                     <StackPanel Orientation="Horizontal">
                                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe928;"/>
                                         <TextBlock Text="Create Disk Image..." Margin="8,0,0,0"/>
                                     </StackPanel>
                                 </Button>
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <TextBlock Text="{Binding DeviceID}" FontSize="12" FontWeight="SemiLight" Margin="0,0,0,0" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}"/>
+                                <TextBlock Text="{Binding MediaType}" FontSize="12" FontWeight="SemiLight" Margin="15,0,0,0" Foreground="{ThemeResource SystemBaseHighColor}"/>
+                                <TextBlock Text="{Binding Size, Converter={StaticResource FileSizeConverter}}" FontSize="12" FontWeight="SemiLight" Margin="15,0,0,0"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Serial:" FontSize="12" FontWeight="SemiLight" Margin="15,0,0,0" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}"/>
+                                    <TextBlock Text="{Binding SerialNumber}" FontSize="12" FontWeight="Bold" Margin="5,0,0,0" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}"/>
+                                </StackPanel>
                             </StackPanel>
+
+
                             <ItemsControl ItemsSource="{Binding LogicalVolumes}" BorderThickness="0" Background="Transparent">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>

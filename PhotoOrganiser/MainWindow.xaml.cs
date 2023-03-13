@@ -58,7 +58,7 @@ public sealed partial class MainWindow : Window
                     Title = "Home";
                     break;
                 case "FileDetailsView":
-                    shellFrame.Navigate(typeof(FileDetailsView));
+                    shellFrame.Navigate(typeof(EvidenceView));
                     Title = "File Details";
                     break;
                 case "DeviceListView":
