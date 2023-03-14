@@ -9,52 +9,63 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     mc:Ignorable="d">
 
-    <Grid RowDefinitions="28,Auto,*">
-        <!--#region Resources -->
-        <Grid.Resources>
-            <Style TargetType="controls:HeaderedContentControl">
-                <Setter Property="HeaderTemplate">
-                    <Setter.Value>
-                        <DataTemplate>
-                            <TextBlock FontWeight="SemiBold" Text="{Binding}"/>
-                        </DataTemplate>
-                    </Setter.Value>
-                </Setter>
-                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            </Style>
-        </Grid.Resources>
-        <!--#endregion-->
-        <NavigationView x:Name="shellNavigation" SelectionChanged="shellNavigation_SelectionChanged" Grid.Row="2" IsPaneOpen="False">
+    <Grid>
+        <NavigationView 
+            x:Name="shellNavigation" 
+            SelectionChanged="shellNavigation_SelectionChanged" 
+            Grid.Row="2" 
+            IsPaneOpen="False" 
+            IsTitleBarAutoPaddingEnabled="True"            
+            IsBackButtonVisible="Collapsed"           
+            Canvas.ZIndex="0">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Home" Icon="Home" ToolTipService.ToolTip="Home" Tag="HomeView"/>
-                <NavigationViewItem Content="Case Management" Icon="Contact" ToolTipService.ToolTip="Account" Tag="FileDetailsView">
-                    <NavigationViewItem.MenuItems>
-                        <NavigationViewItem Content="Mail" Icon="Mail" ToolTipService.ToolTip="Mail" Tag=""/>
-                        <NavigationViewItem Content="Calendar" Icon="Calendar" ToolTipService.ToolTip="Calendar" Tag=""/>
-                    </NavigationViewItem.MenuItems>
-                </NavigationViewItem>
-                <NavigationViewItem Content="Tools" Icon="Page2" ToolTipService.ToolTip="Document options" SelectsOnInvoked="False">
-                    <NavigationViewItem.MenuItems>
-                        <NavigationViewItem Content="Disks" Icon="MapDrive" ToolTipService.ToolTip="Logical Volumes" Tag="DeviceListView"/>
-                    </NavigationViewItem.MenuItems>
-                </NavigationViewItem>
+                <NavigationViewItem Content="Case Management" Icon="Contact" ToolTipService.ToolTip="Account" Tag="FileDetailsView"/>
+                <NavigationViewItem Content="Disks" Icon="MapDrive" ToolTipService.ToolTip="Logical Volumes" Tag="DeviceListView"/>
             </NavigationView.MenuItems>
             <!--#region Views -->
-            <Frame x:Name="shellFrame" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"/>
+            <Grid RowDefinitions="*,Auto,45" Margin="0,40,0,0">
+                <Frame x:Name="shellFrame" Grid.Row="0"/>
+                <Border CornerRadius="0" Grid.Row="2" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}">
+                    <Grid ColumnDefinitions="200,15,*,15,200" x:Name="StatusBar">
+                        <TextBlock Grid.Column="0" x:Name="StatusBarText" VerticalAlignment="Center" HorizontalAlignment="Left" Text="Status: Idle" FontSize="12" Margin="10,0,0,0"/>
+                        <Border Grid.Column="1" Width="2" Height="20" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"  />
+                        <ProgressBar Grid.Column="2" IsIndeterminate="True" Width="Auto" Margin="25,0,25,0"/>
+                        <Border Grid.Column="3" Width="2" Height="20" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"  />
+                        <TextBlock Grid.Column="4" x:Name="StatusBarText2" VerticalAlignment="Center" HorizontalAlignment="Left" Text="24.3 GB / 520.53 GB" FontSize="12" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="10,0,0,0"/>
+                    </Grid>
+                </Border>
+
+            </Grid>
+
+
+
             <!--#endregion-->
         </NavigationView>
         <!--#region Title Bar-->
-        <StackPanel
-            x:Name="TitleBar"
-            Grid.Row="0"
-            Margin="0,0,120,0"
-            Background="{ThemeResource AppBarBackgroundThemeBrush}"
-            Orientation="Horizontal">
-            <Image Source="Assets/magnet.png"/>
-            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Text="{x:Bind Title}" FontWeight="SemiBold" FontSize="12"/>
-        </StackPanel>
+        <Border x:Name="TitleBar"
+                IsHitTestVisible="True"
+                VerticalAlignment="Top"
+                Height="40"
+                Canvas.ZIndex="1" 
+                Margin="56,4,0,0">
+            <StackPanel Orientation="Horizontal">
+                <Image x:Name="AppFontIcon"
+                    HorizontalAlignment="Left" 
+                    VerticalAlignment="Center"
+                    Source="Assets/magnet.png" 
+                    Width="24" 
+                    Height="24"/>
+                <TextBlock x:Name="AppTitle"
+                    Text="{x:Bind Title}"
+                    VerticalAlignment="Center"
+                    Margin="12, 0, 0, 0"
+                    Style="{StaticResource CaptionTextBlockStyle}" />
+            </StackPanel>
+        </Border>
         <!--#endregion-->
     </Grid>
 </Window>

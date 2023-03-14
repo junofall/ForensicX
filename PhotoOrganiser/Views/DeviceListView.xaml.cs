@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Security.Principal;
 using Windows.ApplicationModel.Core;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -38,6 +39,7 @@ namespace ForensicX.Views
         {
             this.InitializeComponent();
             viewModel = (DeviceListViewModel)DataContext;
+            Debug.WriteLine("Process Elevated? " + isElevated());
         }
 
         private async void ShowDialog_Click(object sender, RoutedEventArgs e)
@@ -82,6 +84,16 @@ namespace ForensicX.Views
             // Disable the primary button if the input fields are not valid
             dialog.IsPrimaryButtonEnabled = dialogContent.isPathValid;
             Debug.WriteLine("Is Path Valid? : " + dialogContent.isPathValid);
+        }
+
+        private bool isElevated()
+        {
+            bool isElevated;
+            using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+            {
+                WindowsPrincipal principal = new WindowsPrincipal(identity);
+                return principal.IsInRole(WindowsBuiltInRole.Administrator);
+            }
         }
     }
 }

@@ -7,7 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
     xmlns:viewmodel="using:ForensicX.ViewModels"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}">
 
     <Page.DataContext>
         <viewmodel:EvidenceViewModel/>
