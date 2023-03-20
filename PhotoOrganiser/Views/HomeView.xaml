@@ -172,7 +172,7 @@
                 
                 <StackPanel Grid.Row="1" x:Name="FileExplorerViewBody" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="8" Margin="0,10,0,0">
                     <!-- Bind your ListView items here, configure the layout to be similar to Windows Explorer -->
-                    <GridView x:Name="ChildrenGridView" Margin="10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Padding="10" ItemTemplateSelector="{StaticResource FileEntryTemplateSelector}" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <GridView x:Name="ChildrenGridView" Margin="10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Padding="10" ItemTemplateSelector="{StaticResource FileEntryTemplateSelector}" ScrollViewer.CanContentRenderOutsideBounds="False" ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <GridView.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <local:VariableRowHeightWrapPanel/>
