@@ -1,14 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ForensicX.Models.Disks.FileSystems.FAT16B.Components
 {
-    public class FileEntry
+    public class FileEntry : INotifyPropertyChanged
     {
-        public string FileName { get; set; }
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void NotifyPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public override string ToString()
+        {
+            return Name;
+        }
+
+        public string Name { get; set; }
         public string Extension { get; set; }
         public string FilePath { get; set; }
         public ulong FileSize { get; set; }
@@ -18,7 +32,7 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B.Components
         public DateTime LastAccessedTime { get; set; }
         public DateTime LastModifiedTime { get; set; }
         public List<ushort> ClusterChain { get; set; }
-        public List<FileEntry> Subdirectories { get; set; }
+        public List<FileEntry> Children { get; set; }
 
         [Flags]
         public enum FileAttributes : byte

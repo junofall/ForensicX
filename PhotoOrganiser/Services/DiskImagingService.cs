@@ -9,12 +9,15 @@ namespace ForensicX.Services
 {
     public class DiskImagingService
     {
-        public event EventHandler<double> ProgressUpdated;
-
+        public double Progress { get; set; }
         public async Task ImageDiskAsync(string sourceDevicePath, string targetFilePath)
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             var diskImager = new DiskImager(sourceDevicePath, targetFilePath);
+            diskImager.ProgressUpdated += (sender, progress) =>
+            {
+                Progress = progress;
+            };
             await Task.Run(() => diskImager.Copy(cancellationTokenSource.Token));
         }
     }

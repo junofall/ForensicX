@@ -24,25 +24,56 @@ namespace ForensicX.Services
         private const uint IOCTL_DISK_GET_DRIVE_GEOMETRY_EX = 0x700a0;
 
 
-        // disk geometry hierarchy
-
-        // bytes per sector
-        // sectors per track
-        // tracks per cylinder
-        // sectors per cylinder
+        public ulong BytesPerSector { get; private set; }
+        public long DiskSize { get; private set; }
 
         [StructLayout(LayoutKind.Sequential)]
         public struct DISK_GEOMETRY_EX
         {
-            public ulong BytesPerSector;
-            public ulong SectorsPerTrack;
-            public uint TracksPerCylinder;
-            public uint Cylinders;
+            public DISK_GEOMETRY Geometry;
             public long DiskSize;
             public byte[] Data;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        public struct DISK_GEOMETRY
+        {
+            public long Cylinders;
+            public MEDIA_TYPE MediaType;
+            public uint TracksPerCylinder;
+            public uint SectorsPerTrack;
+            public uint BytesPerSector;
+        }
 
+        public enum MEDIA_TYPE
+        {
+            Unknown,
+            F5_1Pt2_512,
+            F3_1Pt44_512,
+            F3_2Pt88_512,
+            F3_20Pt8_512,
+            F3_720_512,
+            F5_360_512,
+            F5_320_512,
+            F5_320_1024,
+            F5_180_512,
+            F5_160_512,
+            RemovableMedia,
+            FixedMedia,
+            F3_120M_512,
+            F3_640_512,
+            F5_640_512,
+            F5_720_512,
+            F3_1Pt2_512,
+            F3_1Pt23_1024,
+            F5_1Pt23_1024,
+            F3_128Mb_512,
+            F3_230Mb_512,
+            F8_256_128,
+            F3_200Mb_512,
+            F3_240M_512,
+            F3_32M_512
+        }
 
         // Use interop to call the CreateFile function.
         // For more information about CreateFile,
@@ -72,19 +103,21 @@ namespace ForensicX.Services
             ref DISK_GEOMETRY_EX lpOutBuffer,
             int nOutBufferSize,
             out int lpBytesReturned,
-            IntPtr lpOverlapped);
+            IntPtr lpOverlapped
+            );
 
         private SafeFileHandle handleValue = null;
         private FileStream _fs = null;
-        private readonly long length = 0;
+        private long length = 0;
 
         public DeviceStream(string device)
         {
             Load(device);
 
             // Retrieve disk geometry information
-            DISK_GEOMETRY_EX geometry = new();
-            bool success = DeviceIoControl(handleValue, IOCTL_DISK_GET_DRIVE_GEOMETRY_EX, IntPtr.Zero, 0, ref geometry, Marshal.SizeOf(geometry), out int bytesReturned, IntPtr.Zero);
+            DISK_GEOMETRY_EX geometry = new DISK_GEOMETRY_EX();
+            int bytesReturned = 0;
+            bool success = DeviceIoControl(handleValue, IOCTL_DISK_GET_DRIVE_GEOMETRY_EX, IntPtr.Zero, 0, ref geometry, Marshal.SizeOf(typeof(DISK_GEOMETRY_EX)), out bytesReturned, IntPtr.Zero);
 
             if (!success)
             {
@@ -92,30 +125,22 @@ namespace ForensicX.Services
             }
 
             length = geometry.DiskSize;
+            BytesPerSector = geometry.Geometry.BytesPerSector;
+            DiskSize = geometry.DiskSize;
         }
 
         private void Load(string Path)
         {
             if (string.IsNullOrEmpty(Path))
             {
-                throw new ArgumentNullException(nameof(Path));
+                throw new ArgumentNullException("Path");
             }
 
             // Try to open the file.
             IntPtr ptr = CreateFile(Path, GENERIC_READ, FILE_SHARE_READ, IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
 
             handleValue = new SafeFileHandle(ptr, true);
-            try
-            {
-                _fs = new FileStream(handleValue, FileAccess.Read);
-            }
-            catch(Exception ex)
-            {
-                Debug.WriteLine("Invalid handle. Is the program running with administrative rights?");
-                Debug.WriteLine($"{handleValue.ToString()}");
-                Debug.WriteLine(Path);
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-            }
+            _fs = new FileStream(handleValue, FileAccess.Read);
 
             // If the handle is invalid,
             // get the last Win32 error 
@@ -166,7 +191,12 @@ namespace ForensicX.Services
             var BufBytes = new byte[count];
             if (!ReadFile(handleValue.DangerousGetHandle(), BufBytes, count, ref BytesRead, IntPtr.Zero))
             {
+                int errorCode = Marshal.GetHRForLastWin32Error();
+                Debug.WriteLine($"Error reading sector at position {Position}: 0x{errorCode:X}");
+                Debug.WriteLine($"BufBytes: {BufBytes.Length} ; count: {count} ; count/sec {count / 512} ; BytesRead: {BytesRead}");
                 Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                // Log the error and the current position
+
             }
             for (int i = 0; i < BytesRead; i++)
             {

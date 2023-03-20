@@ -11,7 +11,6 @@
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     mc:Ignorable="d">
-
     <Grid>
         <NavigationView 
             x:Name="shellNavigation" 
@@ -19,7 +18,7 @@
             Grid.Row="2" 
             IsPaneOpen="False" 
             IsTitleBarAutoPaddingEnabled="True"            
-            IsBackButtonVisible="Collapsed"           
+            IsBackButtonVisible="Visible"           
             Canvas.ZIndex="0">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Home" Icon="Home" ToolTipService.ToolTip="Home" Tag="HomeView"/>
@@ -31,11 +30,11 @@
                 <Frame x:Name="shellFrame" Grid.Row="0"/>
                 <Border CornerRadius="0" Grid.Row="2" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}">
                     <Grid ColumnDefinitions="200,15,*,15,200" x:Name="StatusBar">
-                        <TextBlock Grid.Column="0" x:Name="StatusBarText" VerticalAlignment="Center" HorizontalAlignment="Left" Text="Status: Idle" FontSize="12" Margin="10,0,0,0"/>
+                        <TextBlock Grid.Column="0" x:Name="StatusBarText" VerticalAlignment="Center" HorizontalAlignment="Left" Text="Status: Idle" FontSize="12" Margin="20,0,0,0"/>
                         <Border Grid.Column="1" Width="2" Height="20" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"  />
-                        <ProgressBar Grid.Column="2" IsIndeterminate="True" Width="Auto" Margin="25,0,25,0"/>
+                        <ProgressBar x:Name="ImagingProgressBar" Grid.Column="2" Width="Auto" Margin="25,0,25,0" Visibility="Collapsed"/>
                         <Border Grid.Column="3" Width="2" Height="20" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"  />
-                        <TextBlock Grid.Column="4" x:Name="StatusBarText2" VerticalAlignment="Center" HorizontalAlignment="Left" Text="24.3 GB / 520.53 GB" FontSize="12" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="10,0,0,0"/>
+                        <TextBlock Grid.Column="4" x:Name="StatusBarText2" VerticalAlignment="Center" HorizontalAlignment="Left" Text="" FontSize="12" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="20,0,0,0"/>
                     </Grid>
                 </Border>
 

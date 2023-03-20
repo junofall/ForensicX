@@ -19,7 +19,7 @@
         <helpers:PercentageUsedConverter x:Key="PercentageToUsedConverter"/>
     </Page.Resources>
     <ScrollViewer>
-        <StackPanel Orientation="Vertical" Margin="25,25,25,25">
+        <StackPanel Orientation="Vertical" Margin="45,15,45,15">
             <Grid Margin="0,10,0,10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -38,76 +38,143 @@
             <ItemsControl ItemsSource="{Binding PhysicalDisks}" x:Name="PDiskList">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="8" Margin="0,10,0,10" Padding="10">
-                        <StackPanel>
-                            <Grid VerticalAlignment="Center" Margin="0,10,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <FontIcon Grid.Column="0" FontFamily="Segoe Fluent Icons" Glyph="&#xeda2;" Margin="5,2,0,0"/>
-                                <TextBlock Grid.Column="1" Text="{Binding Model}" FontSize="18" FontWeight="SemiBold" Margin="10,0,0,0"/>
-                            </Grid>
-                            <StackPanel Orientation="Horizontal" Margin="5,0,0,0">
-                                <TextBlock Text="{Binding DeviceID}" FontSize="12" FontWeight="SemiLight" Margin="0,0,0,0" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}"/>
-                                <TextBlock Text="{Binding MediaType}" FontSize="12" FontWeight="SemiLight" Margin="15,0,0,0" Foreground="{ThemeResource SystemBaseHighColor}"/>
-                                <TextBlock Text="{Binding Size, Converter={StaticResource FileSizeConverter}}" FontSize="12" FontWeight="SemiLight" Margin="15,0,0,0"/>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Serial:" FontSize="12" FontWeight="SemiLight" Margin="15,0,0,0" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}"/>
-                                    <TextBlock Text="{Binding SerialNumber}" FontSize="12" FontWeight="Bold" Margin="5,0,0,0" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}"/>
-                                </StackPanel>
-                            </StackPanel>
+                        <Expander Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" 
+                  HorizontalContentAlignment="Stretch" 
+                  CornerRadius="4" 
+                  Margin="0,2,0,2" 
+                  Padding="10" 
+                  Width="Auto"
+                  HorizontalAlignment="Stretch">
+                            <!-- Expander Header -->
+                            <Expander.Header>
+                                <Grid VerticalAlignment="Center" Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                        <FontIcon Grid.Column="0" FontFamily="Segoe Fluent Icons" Glyph="&#xeda2;" Margin="0,0,0,0"/>
+                                        <StackPanel Margin="15,0,0,0">
+                                            <TextBlock Text="{Binding Model}" FontSize="14"/>
+                                            <TextBlock Text="{Binding DeviceID}" FontSize="12" FontWeight="SemiLight" Margin="0,0,5,0" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </Expander.Header>
+                            <Expander.Content>
+                                <StackPanel>
+                                    <Grid Margin="40,0,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
 
+                                        <Grid Grid.Column="0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="Device ID" Margin="4"/>
+                                                <TextBlock Text="Model" Margin="4"/>
+                                                <TextBlock Text="Serial number" Margin="4"/>
+                                                <TextBlock Text="Size (bytes)" Margin="4"/>
+                                                <TextBlock Text="Media type" Margin="4"/>
+                                                <TextBlock Text="Bytes per sector" Margin="4"/>
+                                                <TextBlock Text="Interface type" Margin="4"/>
+                                            </StackPanel>
 
-                            <ItemsControl ItemsSource="{Binding LogicalVolumes}" BorderThickness="0">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Expander Background="{ThemeResource LayerOnMicaBaseAltFillColorDefault}" Margin="0,5,0,0" CornerRadius="10" HorizontalContentAlignment="Stretch" HorizontalAlignment="Stretch">
-                                            <Expander.Header>
+                                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                                <TextBlock Text="{Binding DeviceID}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
+                                                <TextBlock Text="{Binding Model}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
+                                                <TextBlock Text="{Binding SerialNumber}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEDA2;"/>
-                                                    <StackPanel Orientation="Vertical">
-                                                        <StackPanel Orientation="Horizontal" Margin="20,15,0,0">
-                                                            <TextBlock Text="{Binding DeviceID}" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{ThemeResource SystemAccentColorLight3}"/>
-                                                            <TextBlock Text="{Binding VolumeName}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                                        </StackPanel>
-                                                        <StackPanel Orientation="Horizontal" Margin="20,0,0,15">
-                                                            <TextBlock Text="{Binding FileSystem}" VerticalAlignment="Center" Foreground="#aaa" FontSize="12"/>
-                                                            <TextBlock Text="{Binding Size, Converter={StaticResource FileSizeConverter}}" Margin="5,0,0,0"/>
-                                                        </StackPanel>
-                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Size}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
+                                                    <TextBlock Text="{Binding Size, Converter={StaticResource FileSizeConverter}}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
                                                 </StackPanel>
-                                            </Expander.Header>
-                                            <Expander.Content>
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="10"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <StackPanel Orientation="Vertical" Grid.Column="0">
-                                                        <ProgressBar Height="15" IsIndeterminate="False" Value="{Binding PercentageUsed}">
-                                                            <ProgressBar.Foreground>
-                                                                <SolidColorBrush Color="{Binding PercentageUsed, Converter={StaticResource PercentageToColorConverter}}"/>
-                                                            </ProgressBar.Foreground>
-                                                        </ProgressBar>
+                                                <TextBlock Text="{Binding MediaType}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
+                                                <TextBlock Text="{Binding BytesPerSector}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
+                                                <TextBlock Text="{Binding InterfaceType}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <Grid Grid.Column="1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="Partitions" Margin="4"/>
+                                                <TextBlock Text="Sectors per track" Margin="4"/>
+                                                <TextBlock Text="Total cylinders" Margin="4"/>
+                                                <TextBlock Text="Total heads" Margin="4"/>
+                                                <TextBlock Text="Total sectors" Margin="4"/>
+                                                <TextBlock Text="Total tracks" Margin="4"/>
+                                                <TextBlock Text="Tracks per cylinder" Margin="4"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                                <TextBlock Text="{Binding Partitions}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
+                                                <TextBlock Text="{Binding SectorsPerTrack}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
+                                                <TextBlock Text="{Binding TotalCylinders}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
+                                                <TextBlock Text="{Binding TotalHeads}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
+                                                <TextBlock Text="{Binding TotalSectors}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
+                                                <TextBlock Text="{Binding TotalTracks}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
+                                                <TextBlock Text="{Binding TracksPerCylinder}" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}" Margin="4"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Grid>
+                                    <TextBlock Text="Logical volume(s)" FontWeight="SemiBold" FontSize="14" Margin="43,10,0,10"/>
+                                    <ItemsControl ItemsSource="{Binding LogicalVolumes}" BorderThickness="0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Expander Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="4" Margin="40,4,40,4" Padding="10" Width="Auto" HorizontalContentAlignment="Stretch" HorizontalAlignment="Stretch">
+                                                    <Expander.Header>
                                                         <StackPanel Orientation="Horizontal">
-                                                            <TextBlock Text="{Binding FreeSpace, Converter={StaticResource FileSizeConverter}}" FontWeight="SemiBold" Margin="12,0,0,0"/>
-                                                            <TextBlock Text="free of" Margin="5,0,0,0"/>
-                                                            <TextBlock Text="{Binding Size, Converter={StaticResource FileSizeConverter}}" FontWeight="SemiBold" Margin="5,0,0,0"/>
-                                                            <TextBlock Text="Starting Offset" Margin="10 2 5 0" FontSize="12" Foreground="#aaa"/>
-                                                            <TextBlock Text="{Binding StartingOffset}" FontSize="12" Margin="0 2 0 0" Foreground="#aaa"/>
+                                                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEDA2;"/>
+                                                            <StackPanel Orientation="Vertical">
+                                                                <StackPanel Orientation="Horizontal" Margin="20,15,0,0">
+                                                                    <TextBlock Text="{Binding DeviceID}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                                    <TextBlock Text="{Binding VolumeName}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                                                </StackPanel>
+                                                                <StackPanel Orientation="Horizontal" Margin="20,0,0,15">
+                                                                    <TextBlock Text="{Binding FileSystem}" VerticalAlignment="Center" Foreground="#ccc" FontSize="12"/>
+                                                                    <TextBlock Text="{Binding Size, Converter={StaticResource FileSizeConverter}}" FontSize="12" Margin="5,0,0,0" Foreground="{ThemeResource TextBoxButtonForegroundThemeBrush}"/>
+                                                                </StackPanel>
+                                                            </StackPanel>
                                                         </StackPanel>
-                                                    </StackPanel>
-                                                </Grid>
-                                            </Expander.Content>
-                                        </Expander>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                        </Border>
+                                                    </Expander.Header>
+                                                    <Expander.Content>
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="10"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <StackPanel Orientation="Vertical" Grid.Column="0">
+                                                                <ProgressBar Height="15" IsIndeterminate="False" Value="{Binding PercentageUsed}">
+                                                                    <ProgressBar.Foreground>
+                                                                        <SolidColorBrush Color="{Binding PercentageUsed, Converter={StaticResource PercentageToColorConverter}}"/>
+                                                                    </ProgressBar.Foreground>
+                                                                </ProgressBar>
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <TextBlock Text="{Binding FreeSpace, Converter={StaticResource FileSizeConverter}}" FontWeight="SemiBold" Margin="12,0,0,0"/>
+                                                                    <TextBlock Text="free of" Margin="5,0,0,0"/>
+                                                                    <TextBlock Text="{Binding Size, Converter={StaticResource FileSizeConverter}}" FontWeight="SemiBold" Margin="5,0,0,0"/>
+                                                                    <TextBlock Text="Starting Offset" Margin="10 2 5 0" FontSize="12" Foreground="#aaa"/>
+                                                                    <TextBlock Text="{Binding StartingOffset}" FontSize="12" Margin="0 2 0 0" Foreground="#aaa"/>
+                                                                </StackPanel>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Expander.Content>
+                                                </Expander>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                                
+                            </Expander.Content>
+                        </Expander>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

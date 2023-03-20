@@ -14,12 +14,19 @@
     </Page.DataContext>
 
     <ScrollViewer>
-        <StackPanel Orientation="Vertical" Margin="15,45,15,15">
-            <StackPanel Orientation="Horizontal" Margin="10">
-                <TextBlock Text="Evidence" FontWeight="Bold" FontSize="32"/>
-            </StackPanel>
-            <Grid>
-                <TextBlock Text="Stuff"/>
+        <StackPanel Orientation="Vertical" Margin="45,15,45,15">
+            <Grid Margin="0,10,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Evidence" Style="{ThemeResource CaptionTextBlockStyle}" FontSize="32" FontWeight="SemiBold"/>
+                <Button Grid.Column="1" x:Name="Extract" Margin="20,5,0,0" HorizontalAlignment="Right">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe928;"/>
+                        <TextBlock Text="Create Disk Image..." Margin="8,0,0,0"/>
+                    </StackPanel>
+                </Button>
             </Grid>
         </StackPanel>
     </ScrollViewer>

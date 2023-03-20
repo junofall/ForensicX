@@ -17,6 +17,7 @@
             <StaticResource x:Key="WindowCaptionBackgroundDisabled" ResourceKey="LayerOnMicaBaseAltFillColorTransparentBrush" />
             <StaticResource x:Key="WindowCaptionForeground" ResourceKey="SystemControlForegroundBaseHighBrush" />
             <StaticResource x:Key="WindowCaptionForegroundDisabled" ResourceKey="SystemControlDisabledBaseMediumLowBrush" />
+            <FontIcon x:Key="SegoeFluentIcons" FontFamily="Segoe Fluent Icons"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

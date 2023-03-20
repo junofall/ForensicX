@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -7,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.Devices.Bluetooth.Advertisement;
 using Windows.UI.StartScreen;
 
 namespace ForensicX.Services
@@ -15,7 +17,11 @@ namespace ForensicX.Services
     {
         private string SourceDevicePath { get; set; }
         private string TargetFilePath { get; set; }
-        public int BufferSize { get; set; } = 1024 * 1024; // Buffer defaults to 1 MB.
+        public ulong CurrentTotalBytesRead { get; set; }
+        public ulong CurrentStreamLength { get; set; }
+
+        public event EventHandler<double> ProgressUpdated;
+        public event EventHandler<double> ChecksumProgressUpdated;
 
         private CancellationTokenSource _cancellationTokenSource;
 
@@ -27,124 +33,180 @@ namespace ForensicX.Services
 
         public void Copy(CancellationToken cancellationToken)
         {
-            const int bufferSize = 1024 * 1024; // 1 meg buffer
-
-            using (var reader = new BinaryReader(new DeviceStream(SourceDevicePath)))
-            using (var writer = new BinaryWriter(new FileStream(TargetFilePath, FileMode.Create)))
+            try
             {
-                var buffer = new byte[bufferSize];
-                long streamLength = reader.BaseStream.Length;
+                int bufferSizeMultiplier = 512 * 64;
+                DeviceStream deviceStream = new DeviceStream(SourceDevicePath);
                 int progress = 0;
-                int bytesRead;
-                long totalBytesRead = 0;
+                Stopwatch sw = new Stopwatch();
 
-                Debug.WriteLine($"Source Path: {SourceDevicePath}");
-                Debug.WriteLine($"Destination: {TargetFilePath}");
-                Debug.WriteLine($"Now copying {streamLength} bytes...");
 
+                byte[] sourceMd5Hash;
+                byte[] sourceSha1Hash;
+
+                using (var reader = new BinaryReader(deviceStream))
+                using (var writer = new BinaryWriter(new FileStream(TargetFilePath, FileMode.Create)))
                 using (var md5 = MD5.Create())
                 using (var sha1 = SHA1.Create())
                 {
-                    try
+                    int bufferSize = (int)deviceStream.BytesPerSector;
+                    Debug.WriteLine("Bytes Per Sector: " + deviceStream.BytesPerSector);
+                    Debug.WriteLine("Disk Size: " + deviceStream.DiskSize);
+                    CurrentStreamLength = (ulong)deviceStream.Length;
+                    var buffer = new byte[bufferSize * bufferSizeMultiplier];
+                    long streamLength = reader.BaseStream.Length;
+                    int bytesRead;
+                    long totalBytesRead = 0;
+
+                    Debug.WriteLine($"Source Path: {SourceDevicePath}");
+                    Debug.WriteLine($"Destination: {TargetFilePath}");
+                    Debug.WriteLine($"Now copying {streamLength} bytes...");
+
+                    sw.Start();
+
+                    while (totalBytesRead < streamLength)
                     {
-                        while (totalBytesRead < streamLength)
+                        long remainingSize = deviceStream.DiskSize - totalBytesRead;
+                        int readSize = remainingSize >= bufferSize * bufferSizeMultiplier
+                            ? bufferSize * bufferSizeMultiplier
+                            : (int)(remainingSize - (remainingSize % bufferSize));
+
+                        bytesRead = reader.Read(buffer, 0, readSize);
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        if (bytesRead == 0)
                         {
-                            cancellationToken.ThrowIfCancellationRequested();
-
-                            bytesRead = reader.Read(buffer, 0, bufferSize);
-                            if (bytesRead == 0)
-                            {
-                                break;
-                            }
-
-                            writer.Write(buffer, 0, bytesRead);
-                            md5.TransformBlock(buffer, 0, bytesRead, buffer, 0);
-                            sha1.TransformBlock(buffer, 0, bytesRead, buffer, 0);
-
-                            // Update progress
-                            long newProgress = totalBytesRead * 100 / streamLength;
-                            if (newProgress != progress)
-                            {
-                                Console.WriteLine($"Progress: {newProgress}%");
-                                progress = (int)newProgress;
-                            }
-
-                            if (totalBytesRead % (100 * 1024 * 1024) == 0) // flush to disk every 100mb
-                            {
-                                Console.WriteLine((totalBytesRead / (1024 * 1024)) + " MB copied");
-                                writer.Flush();
-                            }
-
-                            totalBytesRead += bytesRead;
-                        }
-                        md5.TransformFinalBlock(buffer, 0, 0);
-                        sha1.TransformFinalBlock(buffer, 0, 0);
-
-                        reader.Close();
-                        writer.Close();
-
-                        Debug.WriteLine($"Imaging done. {totalBytesRead} bytes written to {TargetFilePath}");
-
-                        byte[] source_md5Hash = md5.Hash;
-                        byte[] source_sha1Hash = sha1.Hash;
-
-                        Debug.WriteLine("====Initial Checksums====");
-                        Debug.WriteLine($"MD5: {BitConverter.ToString(source_md5Hash).Replace("-", "")}");
-                        Debug.WriteLine($"SHA1: {BitConverter.ToString(source_sha1Hash).Replace("-", "")}");
-
-                        // Validate checksums by reading the source again.
-                        Debug.WriteLine("Validating Checksums...");
-                        using (var targetReader = new BinaryReader(new FileStream(TargetFilePath, FileMode.Open)))
-                        {
-                            var targetBuffer = new byte[100 * 1024 * 1024]; // 100 MB read buffer
-                            long totalTargetBytesRead = 0;
-
-                            using (var validate_md5 = MD5.Create())
-                            using (var validate_sha1 = SHA1.Create())
-                            {
-                                while (totalTargetBytesRead < streamLength)
-                                {
-                                    cancellationToken.ThrowIfCancellationRequested();
-
-                                    int targetBytesRead = targetReader.Read(targetBuffer, 0, targetBuffer.Length);
-                                    if (targetBytesRead == 0)
-                                    {
-                                        break;
-                                    }
-
-                                    validate_md5.TransformBlock(targetBuffer, 0, targetBytesRead, targetBuffer, 0);
-                                    validate_sha1.TransformBlock(targetBuffer, 0, targetBytesRead, targetBuffer, 0);
-                                    totalTargetBytesRead += targetBytesRead;
-                                }
-                                validate_md5.TransformFinalBlock(targetBuffer, 0, 0);
-                                validate_sha1.TransformFinalBlock(targetBuffer, 0, 0);
-
-                                byte[] target_Md5Hash = validate_md5.Hash;
-                                byte[] target_Sha1Hash = validate_sha1.Hash;
-
-                                Debug.WriteLine("====Final Checksums====");
-                                Debug.WriteLine($"MD5: {BitConverter.ToString(target_Md5Hash).Replace("-", "")}");
-                                Debug.WriteLine($"SHA1: {BitConverter.ToString(target_Sha1Hash).Replace("-", "")}");
-
-                                if (Enumerable.SequenceEqual(source_md5Hash, target_Md5Hash) && Enumerable.SequenceEqual(source_sha1Hash, target_Sha1Hash))
-                                {
-                                    Debug.WriteLine("Good copy! Checksums match!");
-                                }
-                                else
-                                {
-                                    Debug.WriteLine("!! BAD COPY !! Checksums do NOT match.");
-                                }
-                                targetReader.Close();
-                            }
+                            break;
                         }
 
+                        if (totalBytesRead % (100 * 1024 * 1024) == 0)
+                        {
+                            //Debug.WriteLine((totalBytesRead / (1024 * 1024)) + " MB copied");
+                            writer.Flush();
+                        }
+
+                        // Update progress
+                        long newProgress = (long)(((double)totalBytesRead / streamLength) * 10000);
+                        if (newProgress != progress)
+                        {
+                            // Calculate time remaining
+                            double elapsedSeconds = sw.Elapsed.TotalSeconds;
+                            double rate = totalBytesRead / elapsedSeconds; // bytes per second
+                            long remainingBytes = streamLength - totalBytesRead;
+                            double estimatedSecondsRemaining = remainingBytes / rate;
+
+                            TimeSpan estimatedTimeRemaining = TimeSpan.FromSeconds(estimatedSecondsRemaining);
+                            DateTime estimatedCompletionTime = DateTime.Now.Add(estimatedTimeRemaining);
+
+                            Debug.WriteLine($"Progress: {newProgress / 100.0}%, ETA: {estimatedTimeRemaining} ({estimatedCompletionTime})");
+
+                            progress = (int)(newProgress / 100);
+                            OnProgressUpdated(progress);
+                        }
+
+                        writer.Write(buffer, 0, bytesRead);
+                        md5.TransformBlock(buffer, 0, bytesRead, buffer, 0);
+                        sha1.TransformBlock(buffer, 0, bytesRead, buffer, 0);
+                        totalBytesRead += bytesRead;
+                        CurrentTotalBytesRead = (ulong)totalBytesRead;
                     }
-                    catch (Exception e)
+
+                    md5.TransformFinalBlock(buffer, 0, 0);
+                    sha1.TransformFinalBlock(buffer, 0, 0);
+                    sourceMd5Hash = md5.Hash;
+                    sourceSha1Hash = sha1.Hash;
+
+                    if (progress != 100)
                     {
-                        Debug.WriteLine(e.Message);
+                        progress = 100;
+                        OnProgressUpdated(progress);
                     }
+
+                    reader.Close();
+                    writer.Close();
+
+                    Debug.WriteLine($"Imaging done. {totalBytesRead} bytes written to {TargetFilePath}");
+                }
+
+                // Reopen file and validate
+                CmpSrcDstHashes(cancellationToken, sourceMd5Hash, sourceSha1Hash);
+                
+            }
+            catch(OperationCanceledException oce)
+            {
+                Debug.WriteLine("Operation Cancelled : " + oce.Message);
+            }
+        }
+
+        private void CmpSrcDstHashes(CancellationToken cancellationToken, byte[] srcMd5Hash, byte[] srcSha1Hash)
+        {
+            Stopwatch sw = new Stopwatch();
+            Debug.WriteLine("Validating Hashes, this may take a while...");
+            byte[] destMd5Hash;
+            byte[] destSha1Hash;
+
+            using (var fileStream = new FileStream(TargetFilePath, FileMode.Open, FileAccess.Read))
+            {
+                using (var md5Dest = MD5.Create())
+                using (var sha1Dest = SHA1.Create())
+                {
+                    byte[] bufferDest = new byte[4 * 1024 * 1024];
+                    int bytesReadDest;
+                    long totalBytesReadDest = 0;
+                    long streamLengthDest = fileStream.Length;
+                    int progressDest = 0;
+
+                    sw.Start();
+                    while ((bytesReadDest = fileStream.Read(bufferDest, 0, bufferDest.Length)) > 0)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        md5Dest.TransformBlock(bufferDest, 0, bytesReadDest, bufferDest, 0);
+                        sha1Dest.TransformBlock(bufferDest, 0, bytesReadDest, bufferDest, 0);
+
+                        totalBytesReadDest += bytesReadDest;
+
+                        // Update progress
+                        long newProgressDest = (long)(((double)totalBytesReadDest / streamLengthDest) * 10000);
+                        if (newProgressDest != progressDest)
+                        {
+                            // Calculate time remaining
+                            double elapsedSeconds = sw.Elapsed.TotalSeconds;
+                            double rate = totalBytesReadDest / elapsedSeconds; // bytes per second
+                            long remainingBytes = streamLengthDest - totalBytesReadDest;
+                            double estimatedSecondsRemaining = remainingBytes / rate;
+
+                            TimeSpan estimatedTimeRemaining = TimeSpan.FromSeconds(estimatedSecondsRemaining);
+                            DateTime estimatedCompletionTime = DateTime.Now.Add(estimatedTimeRemaining);
+
+                            Debug.WriteLine($"Checksum Validation Progress: {newProgressDest / 100.0}%, ETA: {estimatedTimeRemaining} ({estimatedCompletionTime})");
+
+                            progressDest = (int)(newProgressDest / 100);
+                            OnChecksumProgressUpdated(progressDest);
+                        }
+                    }
+
+                    md5Dest.TransformFinalBlock(bufferDest, 0, 0);
+                    sha1Dest.TransformFinalBlock(bufferDest, 0, 0);
+                    destMd5Hash = md5Dest.Hash;
+                    destSha1Hash = sha1Dest.Hash;
                 }
             }
+
+            bool md5Match = StructuralComparisons.StructuralEqualityComparer.Equals(srcMd5Hash, destMd5Hash);
+            bool sha1Match = StructuralComparisons.StructuralEqualityComparer.Equals(srcSha1Hash, destSha1Hash);
+
+            Debug.WriteLine($"MD5 Checksums match: {md5Match}");
+            Debug.WriteLine($"SHA1 Checksums match: {sha1Match}");
+        }
+
+        private void OnProgressUpdated(double progress)
+        {
+            ProgressUpdated?.Invoke(this, progress);
+        }
+
+        private void OnChecksumProgressUpdated(double progress)
+        {
+            ChecksumProgressUpdated?.Invoke(this, progress);
         }
 
         public async Task Start()

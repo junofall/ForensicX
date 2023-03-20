@@ -2,11 +2,13 @@
 using ForensicX.Models.Disks.FileSystems.FAT16B.Components;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using WinRT;
 
 namespace ForensicX.Models.Disks.FileSystems.FAT16B
 {
@@ -27,6 +29,7 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
             ParentPartition = ParentVolume.ParentPartition;
             ParentDisk = ParentPartition.ParentDisk;
 
+            Debug.WriteLine("Initializing FAT16B Filesystem");
             vbr = InitializeVBR();
             FatRegion = InitializeFAT();
             RootDirectoryRegion = InitializeRootDirectory();
@@ -35,16 +38,10 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
                 StartSector = RootDirectoryRegion.StartSector + ((ulong)vbr.RootEntryCount * 32 / ParentDisk.SectorSize)
             };
 
-            //LogicalVolumePrinter.PrintRootDirectory(RootDirectoryRegion);
-
-            var imageRootDirectoryPath = Path.Combine(ParentDisk.DiskName, $"Partition {ParentPartition.PartitionNumber}", ParentVolume.Name, "[root]");
-
-            foreach (FileEntry fil in RootDirectoryRegion.Entries)
+            foreach(FileEntry child in RootDirectoryRegion.Children)
             {
-                ExtractFile(fil, DataRegion.StartSector, @"G:\" + imageRootDirectoryPath);
+                ParentPartition.Children.Add(child);
             }
-
-            //PrintRootDirectory(RootDirectoryRegion);
         }
 
         public VolumeBootRecord InitializeVBR()
@@ -156,7 +153,7 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
             // Read the sectors containing the directory entries
             byte[] directoryBytes = ParentDisk.GetSectorBytes(rootDirectoryRegion.StartSector, (uint)(vbr.RootEntryCount * 32 / ParentDisk.SectorSize));
 
-            rootDirectoryRegion.Entries.AddRange(GetFileEntries(directoryBytes));
+            rootDirectoryRegion.Children.AddRange(GetFileEntries(directoryBytes));
 
             return rootDirectoryRegion;
         }
@@ -202,7 +199,7 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
                     var shortFileName = (char)entryByte + Encoding.ASCII.GetString(directoryBytes, offset + 1, 7).TrimEnd();
                     var fileEntry = new FileEntry
                     {
-                        FileName = "",
+                        Name = "",
                         Extension = Encoding.ASCII.GetString(directoryBytes, offset + 8, 3).TrimEnd(),
                         Attributes = (FileEntry.FileAttributes)(FileAttributes)directoryBytes[offset + 11],
                         //Reserved = rootDirectoryBytes[offset + 12],
@@ -236,19 +233,19 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
                         {
                             fullFileName += lfnEntry.Name1 + lfnEntry.Name2 + lfnEntry.Name3;
                         }
-                        fileEntry.FileName = fullFileName;
+                        fileEntry.Name = fullFileName;
                         LongEntryStash.Clear();
                     }
                     else
                     {
-                        fileEntry.FileName = shortFileName + "." + fileEntry.Extension;
+                        fileEntry.Name = shortFileName + "." + fileEntry.Extension;
                     }
                     if (fileEntry.IsDirectory)
                     {
-                        int lastDotIndex = fileEntry.FileName.LastIndexOf('.');
+                        int lastDotIndex = fileEntry.Name.LastIndexOf('.');
                         if (lastDotIndex >= 0)
                         {
-                            fileEntry.FileName = string.Concat(fileEntry.FileName.AsSpan(0, lastDotIndex), fileEntry.FileName.AsSpan(lastDotIndex + 1));
+                            fileEntry.Name = string.Concat(fileEntry.Name.AsSpan(0, lastDotIndex), fileEntry.Name.AsSpan(lastDotIndex + 1));
                         }
                         ulong rootDirStartSec = ParentPartition.PhysicalSectorOffset + vbr.ReservedSectorCount + (ulong)(vbr.NumberOfFats * vbr.SectorsPerFat16);
                         ulong dataRegionStartSec = rootDirStartSec + ((ulong)vbr.RootEntryCount * 32 / ParentDisk.SectorSize);
@@ -256,11 +253,11 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
                         // Read the sectors containing the directory entries
                         byte[] clusterBytes = ParentDisk.GetSectorBytes(clusterToSector, vbr.SectorsPerCluster);
 
-                        fileEntry.Subdirectories = new List<FileEntry>();
+                        fileEntry.Children = new List<FileEntry>();
 
                         //Recursively parse
                         //Console.WriteLine("Recursively parsing...");
-                        fileEntry.Subdirectories.AddRange(GetFileEntries(clusterBytes));
+                        fileEntry.Children.AddRange(GetFileEntries(clusterBytes));
                     }
 
                     //Debug.WriteLine("Adding Entry...");
@@ -305,14 +302,14 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
                 if (file.IsDirectory)
                 {
                     //Debug.WriteLine("ExtractFile@FAT16B - Directory Path: " + directoryPath);
-                    directoryPath = Path.Combine(directoryPath, file.FileName);
+                    directoryPath = Path.Combine(directoryPath, file.Name);
                     //Debug.WriteLine("ExtractFile@FAT16B - Directory Path Combined: " + directoryPath);
 
                     Directory.CreateDirectory(directoryPath);
 
-                    if (file.Subdirectories.Count > 0)
+                    if (file.Children.Count > 0)
                     {
-                        foreach (FileEntry subFile in file.Subdirectories)
+                        foreach (FileEntry subFile in file.Children)
                         {
                             ExtractFile(subFile, firstDataSector, directoryPath);
                         }
@@ -335,7 +332,7 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
                         Directory.CreateDirectory(directoryPath);
                     }
 
-                    var filePath = Path.Combine(ParentVolume.Name, directoryPath, Path.GetFileName(file.FileName));
+                    var filePath = Path.Combine(ParentVolume.Name, directoryPath, Path.GetFileName(file.Name));
                     //Debug.WriteLine("ExtractFile 'ELSE' @FAT16B - File Path: " + filePath);
                     //Debug.WriteLine($"SPC: {vbr.SectorsPerCluster}, BPS: {vbr.BytesPerSector}");
                     //Debug.WriteLine(filePath);

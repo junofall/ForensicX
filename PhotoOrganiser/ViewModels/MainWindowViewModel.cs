@@ -9,6 +9,7 @@ public partial class MainWindowViewModel : ObservableObject
 {
     public MainWindowViewModel()
     {
+
     }
 
     

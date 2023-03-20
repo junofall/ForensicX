@@ -16,6 +16,10 @@ using Windows.Storage.Pickers;
 using Microsoft.UI.Composition.SystemBackdrops;
 using System.Runtime.InteropServices;
 using WinRT;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.ComponentModel;
+using Microsoft.Toolkit.Uwp.Notifications;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -30,6 +34,14 @@ public sealed partial class MainWindow : Window
     MicaController m_backdropController;
     SystemBackdropConfiguration m_configurationSource;
 
+    public event EventHandler<double> ProgressUpdated;
+
+    public ProgressBar _imagingProgressBar => StatusBar.FindName("ImagingProgressBar") as ProgressBar;
+
+    public TextBlock _statusBarText => StatusBar.FindName("StatusBarText") as TextBlock;
+
+    public TextBlock _statusBarText2 => StatusBar.FindName("StatusBarText2") as TextBlock;
+
     public MainWindow()
     {
         this.InitializeComponent();
@@ -39,6 +51,12 @@ public sealed partial class MainWindow : Window
         Title = "ForensicX";
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBar);
+        shellFrame.Navigate(typeof(HomeView));
+    }
+
+    private void OnProgressUpdated(double progress)
+    {
+        ProgressUpdated?.Invoke(this, progress);
     }
 
     private void shellNavigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)

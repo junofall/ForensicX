@@ -3,6 +3,7 @@ using ForensicX.Models.Disks.FileSystems.FAT16B;
 using ForensicX.Models.Disks.FileSystems.FAT32;
 using ForensicX.Models.Disks.FileSystems.NTFS;
 using System;
+using System.Reflection.Metadata.Ecma335;
 
 namespace ForensicX.Models.Factory
 {
@@ -15,13 +16,14 @@ namespace ForensicX.Models.Factory
                 case 0x06:
                     return new FAT16BFileSystem(parentVolume);
                 case 0x0C:
-                    return new FAT32FileSystem(parentVolume); // LBA
+                    return null; // LBA
                 case 0x0E:
                     return new FAT16BFileSystem(parentVolume); //LBA
                 case 0x07:
-                    return new NTFSFileSystem(parentVolume); // Could be either exFAT or NTFS.
+                    return null; // Could be either exFAT or NTFS.
                 default:
-                    throw new NotSupportedException($"Partition type 0x{partitionType:X2} is not supported.");
+                    //throw new NotSupportedException($"Partition type 0x{partitionType:X2} is not supported.");
+                    return null;     
             }
         }
     }
