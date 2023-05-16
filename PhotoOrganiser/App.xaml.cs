@@ -31,5 +31,5 @@ namespace ForensicX;
             _window.Activate();
         }
 
-        private Window? _window;
+        internal Window? _window;
     }

@@ -1,4 +1,8 @@
-﻿using Microsoft.UI.Xaml;
+// Copyright (c) Microsoft Corporation and Contributors.
+// Licensed under the MIT License.
+
+using ForensicX.Models;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
@@ -18,12 +22,18 @@ using Windows.Foundation.Collections;
 
 namespace ForensicX.Views
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    public sealed partial class FileDetailsView : Page
+    public sealed partial class EvidenceDashboard : UserControl
     {
-        public FileDetailsView()
+        public static readonly DependencyProperty EvidenceItemProperty =
+            DependencyProperty.Register(nameof(EvidenceItem), typeof(EvidenceItem), typeof(EvidenceDashboard), new PropertyMetadata(null));
+
+        public EvidenceItem EvidenceItem
+        {
+            get => (EvidenceItem)GetValue(EvidenceItemProperty);
+            set => SetValue(EvidenceItemProperty, value);
+        }
+
+        public EvidenceDashboard()
         {
             this.InitializeComponent();
         }

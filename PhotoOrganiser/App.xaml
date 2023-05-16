@@ -5,7 +5,8 @@
     x:Class="ForensicX.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:ForensicX">
+    xmlns:local="using:ForensicX"
+    xmlns:viewModels="using:ForensicX.ViewModels">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -13,6 +14,12 @@
                 <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
             <!-- Other app resources here -->
+            <StaticResource x:Key="WindowCaptionBackground" ResourceKey="LayerOnMicaBaseAltFillColorTransparentBrush" />
+            <StaticResource x:Key="WindowCaptionBackgroundDisabled" ResourceKey="LayerOnMicaBaseAltFillColorTransparentBrush" />
+            <StaticResource x:Key="WindowCaptionForeground" ResourceKey="SystemControlForegroundBaseHighBrush" />
+            <StaticResource x:Key="WindowCaptionForegroundDisabled" ResourceKey="SystemControlDisabledBaseMediumLowBrush" />
+            <FontIcon x:Key="SegoeFluentIcons" FontFamily="Segoe Fluent Icons"/>
+            <viewModels:ViewModelLocator x:Key="ViewModelLocator"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
