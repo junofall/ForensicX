@@ -12,9 +12,12 @@ namespace ForensicX.Models.Evidence
     {
         public Disk DiskInstance { get; private set; }
 
-        public void Load()
+        public async Task LoadAsync()
         {
-            DiskInstance = new Disk(Path, 512);
+            await Task.Run(() =>
+            {
+                DiskInstance = new Disk(Path, 512);
+            });
         }
     }
 }

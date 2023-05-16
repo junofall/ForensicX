@@ -17,6 +17,12 @@ using ForensicX.Models.Disks.FileSystems.FAT16B.Components;
 using ForensicX.Models.Disks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Windows.Storage.Streams;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Microsoft.UI.Dispatching;
+using System.IO;
+using Windows.Win32.UI.Shell.Common;
+using ForensicX.Helpers;
 
 namespace ForensicX.ViewModels
 {
@@ -25,63 +31,133 @@ namespace ForensicX.ViewModels
         public ObservableCollection<TreeViewItem> EvidenceTreeItems { get; set; }
         public ObservableCollection<EvidenceItem> EvidenceItems { get; set; }
         public event EventHandler<EvidenceItem> DataReady;
+        public event EventHandler<bool> IsAddingEvidenceItemChanged;
+        private FileSizeConverter fsc = new();
+
+        protected void OnIsAddingEvidenceItemChanged(bool isAdding)
+        {
+            IsAddingEvidenceItemChanged?.Invoke(this, isAdding);
+        }
+
 
         private EvidenceItem _selectedEvidenceItem;
-    public EvidenceItem SelectedEvidenceItem
-    {
-        get => _selectedEvidenceItem;
-        set
+
+        public EvidenceItem SelectedEvidenceItem
         {
-            _selectedEvidenceItem = value;
-            // NotifyPropertyChanged if you are implementing INotifyPropertyChanged
+            get => _selectedEvidenceItem;
+            set
+            {
+                _selectedEvidenceItem = value;
+                // NotifyPropertyChanged if you are implementing INotifyPropertyChanged
+            }
         }
-    }
 
         public ICommand AddEvidenceCommand { get; }
+        public ICommand RemoveEvidenceCommand { get; }
+
         public HomeViewViewModel()
         {
             AddEvidenceCommand = new RelayCommand(AddEvidence);
             EvidenceItems = new ObservableCollection<EvidenceItem>();
+            RemoveEvidenceCommand = new RelayCommand(RemoveSelectedEvidenceItem);
+        }
+
+        private void RemoveSelectedEvidenceItem()
+        {
+            if (SelectedEvidenceItem != null)
+            {
+                EvidenceItems.Remove(SelectedEvidenceItem);
+                System.Diagnostics.Debug.WriteLine("Item Removed");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("Cannot remove, item is null.");
+            }
         }
 
         private async void AddEvidence()
         {
-            // Create a folder picker
-            FileOpenPicker openPicker = new FileOpenPicker();
+            try {
+                var window = (Application.Current as App)?._window as MainWindow;
 
-            var window = (Application.Current as App)?._window as MainWindow;
+                // Retrieve the window handle (HWND) of the current WinUI 3 window.
+                var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
 
-            // Retrieve the window handle (HWND) of the current WinUI 3 window.
-            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+                string selectedFilePath = await PickFileAsync(hWnd);
 
-            // Initialize the folder picker with the window handle (HWND).
-            WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
-
-            // Set options for your folder picker
-            openPicker.SuggestedStartLocation = PickerLocationId.Desktop;
-            openPicker.FileTypeFilter.Add("*");
-
-            // Open the picker for the user to pick a folder
-            StorageFile file = await openPicker.PickSingleFileAsync();
-            if (file != null)
-            {
-                // Create a new EvidenceItem and add it to the EvidenceItems collection
-                var evidenceItem = new DiskImageEvidence { Name = file.Name, Path = file.Path };
-                evidenceItem.Load();
-                evidenceItem.DiskInstance.Initialize();
-                evidenceItem.Children = new ObservableCollection<Partition>();
-                foreach(Partition p in evidenceItem.DiskInstance.Partitions)
+                if (!string.IsNullOrEmpty(selectedFilePath))
                 {
-                    evidenceItem.Children.Add(p);
-                    System.Diagnostics.Debug.WriteLine("Partition Added");
-                };
+                    OnIsAddingEvidenceItemChanged(true);
 
-                window.DispatcherQueue.TryEnqueue(() =>
-                {
-                    EvidenceItems.Add(evidenceItem);
-                    OnDataReady(evidenceItem);
-                });
+                    // Create a new EvidenceItem and add it to the EvidenceItems collection
+                    var evidenceItem = new DiskImageEvidence { Name = Path.GetFileName(selectedFilePath), Path = selectedFilePath };
+                    await evidenceItem.LoadAsync();
+                    await evidenceItem.DiskInstance.InitializeAsync();
+                    evidenceItem.Children = new ObservableCollection<Partition>();
+                    foreach (Partition p in evidenceItem.DiskInstance.Partitions)
+                    {
+                        evidenceItem.Children.Add(p);
+                        Debug.WriteLine("Partition Added");
+                    };
+
+                    window.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        EvidenceItems.Add(evidenceItem);
+                        OnDataReady(evidenceItem);
+                        OnIsAddingEvidenceItemChanged(false);
+                    });
+                }
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Exception: " + ex.Message);
+            }
+        }
+
+        private async Task<string> PickFileAsync(IntPtr hWnd)
+        {
+            return await Task.Run(() =>
+            {
+                string filePath = "";
+                try
+                {
+                    int hr = Windows.Win32.PInvoke.CoCreateInstance(
+                    typeof(Windows.Win32.UI.Shell.FileOpenDialog).GUID,
+                    null,
+                    Windows.Win32.System.Com.CLSCTX.CLSCTX_INPROC_SERVER,
+                    typeof(Windows.Win32.UI.Shell.IFileOpenDialog).GUID,
+                    out var obj);
+                    if (hr < 0)
+                    {
+                        Marshal.ThrowExceptionForHR(hr);
+                    }
+
+                    Windows.Win32.UI.Shell.IFileOpenDialog fod = (Windows.Win32.UI.Shell.IFileOpenDialog)obj;
+
+                    // Show the dialog.
+                    fod.Show(new Windows.Win32.Foundation.HWND(hWnd));
+
+                    // Get the selected file.
+                    fod.GetResult(out var ppsi);
+
+                    unsafe
+                    {
+                        Windows.Win32.Foundation.PWSTR selectedFilePathPtr;
+                        ppsi.GetDisplayName(Windows.Win32.UI.Shell.SIGDN.SIGDN_FILESYSPATH, &selectedFilePathPtr);
+                        filePath = selectedFilePathPtr.ToString();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("Exception: " + ex.Message);
+                }
+                return filePath;
+            });
+        }
+
+        public void UpdateSelectedEvidenceItem(EvidenceItem selectedItem)
+        {
+            SelectedEvidenceItem = selectedItem;
         }
 
         private void OnDataReady(EvidenceItem item)
@@ -101,7 +177,7 @@ namespace ForensicX.ViewModels
                 foreach (Partition partition in item.Children)
                 {
                     System.Diagnostics.Debug.WriteLine($"{indent}    Partition: {partition.Name}");
-                    PrintFileEntries(partition.Children, level + 2);
+                    PrintFileEntries(partition.Volume.Children, level + 2);
                 }
             }
         }
@@ -122,6 +198,9 @@ namespace ForensicX.ViewModels
         }
 
 
+
+
+
         public static TreeViewNode BuildTreeView(EvidenceItem item)
         {
             TreeViewNode evidenceNode = new TreeViewNode { Content = item };
@@ -136,17 +215,41 @@ namespace ForensicX.ViewModels
         public static List<TreeViewNode> BuildPartitionNodes(ObservableCollection<Partition> partitions)
         {
             List<TreeViewNode> partitionNodes = new List<TreeViewNode>();
-
+            FileSizeConverter fsc = new FileSizeConverter();
             if (partitions != null)
             {
                 foreach (Partition partition in partitions)
                 {
-                    TreeViewNode partitionNode = new TreeViewNode { Content = partition };
-                    foreach (var node in BuildFileEntryNodes(partition.Children))
+                    // Create a partition node with the size information
+                    TreeViewNode partitionNode = new TreeViewNode
                     {
-                        partitionNode.Children.Add(node);
+                        Content = partition
+                    };
+
+                    if (partition.Volume != null)
+                    {
+                        // Create a volume node with the volume name and file system type
+                        TreeViewNode volumeNode = new TreeViewNode
+                        {
+                            Content = partition.Volume
+                        };
+
+                        // Create a separate TreeViewNode for the root directory
+                        TreeViewNode rootDirectoryNode = new TreeViewNode { Content = "[rootdir]" };
+
+                        volumeNode.Children.Add(rootDirectoryNode);
+
+                        // Build the FileEntry nodes for the volume
+                        foreach (var node in BuildFileEntryNodes(partition.Volume.Children))
+                        {
+                            rootDirectoryNode.Children.Add(node);
+                        }
+
+                        // Add the volume node to the partition node
+                        partitionNode.Children.Add(volumeNode);
+                        partitionNode.IsExpanded = false;
                     }
-                    partitionNode.IsExpanded = false;
+
                     partitionNodes.Add(partitionNode);
                 }
             }

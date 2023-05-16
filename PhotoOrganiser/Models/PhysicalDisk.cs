@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+
 
 namespace ForensicX.Models
 {
@@ -22,6 +19,6 @@ namespace ForensicX.Models
         public ulong TotalSectors { get; set; }
         public ulong TotalTracks { get; set; }
         public uint TracksPerCylinder { get; set; }
-        public List<LogicalVolume>? LogicalVolumes { get; set; }
+        public List<DiskPartitionEntry> PartitionEntries { get; set; }
     }
 }

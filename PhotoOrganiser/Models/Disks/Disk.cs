@@ -39,12 +39,12 @@ namespace ForensicX.Models.Disks
             }
         }
 
-        public void Initialize()
+        public async Task InitializeAsync()
         {
             using (var stream = new FileStream(ImagePath, FileMode.Open, FileAccess.Read))
             {
                 var buffer = new byte[SectorSize];
-                stream.Read(buffer, 0, (int)SectorSize);
+                await stream.ReadAsync(buffer, 0, (int)SectorSize).ConfigureAwait(false);
 
                 // Parse the partition entries in the MBR
                 for (int i = 0; i < 4; i++)
@@ -58,7 +58,7 @@ namespace ForensicX.Models.Disks
                     {
                         Debug.WriteLine($"{partitionEntry.PartitionType:X} found. Finding additional entries...");
                         var firstEbaPhysicalSector = partitionEntry.FirstSectorLba;
-                        ParseEBR(partitionEntry, partitionEntry.FirstSectorLba, firstEbaPhysicalSector);
+                        await ParseEbrAsync(partitionEntry, partitionEntry.FirstSectorLba, firstEbaPhysicalSector);
                     }
                     else if(partitionEntry.PartitionType == 0x00)
                     {
@@ -67,6 +67,7 @@ namespace ForensicX.Models.Disks
                     else
                     {
                         var newPartition = new Partition(partitionEntry, this, partitionEntry.FirstSectorLba, partitionEntry.FirstSectorLba);
+                        newPartition.PartitionLength = partitionEntry.SectorCount * SectorSize;
                         Partitions.Add(newPartition);
                         Debug.WriteLine($"Set new partition PhysicalSectorOffset to {partitionEntry.FirstSectorLba}");
                     }
@@ -74,7 +75,7 @@ namespace ForensicX.Models.Disks
             }
         }
 
-        private void ParseEBR(PartitionEntry partitionEntry, ulong currentEbrLba, ulong firstEbaSector)
+        private async Task ParseEbrAsync(PartitionEntry partitionEntry, ulong currentEbrLba, ulong firstEbaSector)
         {
             var FirstEbaSector = firstEbaSector;
 
@@ -84,7 +85,7 @@ namespace ForensicX.Models.Disks
 
                 Debug.WriteLine($"Parsing EBR. Going to entries at: {(long)currentEbrLba * SectorSize} : Sector {currentEbrLba}");
                 stream.Seek((long)currentEbrLba * SectorSize, SeekOrigin.Begin);
-                stream.Read(buffer, 0, (int)SectorSize);
+                await stream.ReadAsync(buffer, 0, (int)SectorSize).ConfigureAwait(false);
 
                 // Parse the partition entries in the EBR
                 for (int i = 0; i < 2; i++)
@@ -94,11 +95,8 @@ namespace ForensicX.Models.Disks
 
                     var ebrPartitionEntry = new PartitionEntry(ebrPartitionBuffer);
 
-                    // Check if the partition is an extended partition and parse its logical partitions
-
                     if (ebrPartitionEntry.PartitionType == 0x00)
                     {
-                        //Debug.WriteLine($"EBR not found at offset {currentEbrLba}");
                         continue;
                     }
                     else if (ebrPartitionEntry.PartitionType == 0x05 || ebrPartitionEntry.PartitionType == 0x0F)
@@ -108,25 +106,15 @@ namespace ForensicX.Models.Disks
                         if (nextRelativeEbrLba != 0)
                         {
                             ulong nextAbsoluteEbrLba = firstEbaSector + nextRelativeEbrLba;
-                            //Debug.WriteLine($"Entry at sector {currentEbrLba} is another EBR! Continuing...");
-                            ParseEBR(ebrPartitionEntry, nextAbsoluteEbrLba, FirstEbaSector);
+                            await ParseEbrAsync(ebrPartitionEntry, nextAbsoluteEbrLba, FirstEbaSector);
                         }
                     }
                     else
                     {
-                        //Debug.WriteLine($"\nPartition found of type {MbrPartitionTypeLookup.Lookup(ebrPartitionEntry.PartitionType)} at offset {currentEbrLba * disk.SectorSize} : Sector {currentEbrLba}");
-
-                        // Calculate the absolute offset of the partition
                         ulong logicalOffset = currentEbrLba;
-                        ulong absoluteOffset = FirstEbaSector + logicalOffset;
-
                         var newPartition = new Partition(ebrPartitionEntry, this, ebrPartitionEntry.FirstSectorLba + currentEbrLba, logicalOffset);
+                        newPartition.PartitionLength = partitionEntry.SectorCount * SectorSize;
                         Partitions.Add(newPartition);
-
-                        //Debug.WriteLine($"logicalOffset = {logicalOffset} ; absoluteOffset = {absoluteOffset} ; newPartition Physical Offset: {ebrPartitionEntry.FirstSectorLba + FirstEbaSector}");
-                        //Debug.WriteLine("First Sector of initial LBA is " + FirstEbaSector);
-                        //Debug.WriteLine("Sector in EBR entry is " + ebrPartitionEntry.FirstSectorLba);
-                        //Debug.WriteLine($"Set new partition PhysicalSectorOffset to {absoluteOffset}\n");
                     }
                 }
             }

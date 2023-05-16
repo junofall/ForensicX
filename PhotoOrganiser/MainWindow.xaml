@@ -26,10 +26,22 @@
                 <NavigationViewItem Content="Disks" Icon="MapDrive" ToolTipService.ToolTip="Logical Volumes" Tag="DeviceListView"/>
             </NavigationView.MenuItems>
             <!--#region Views -->
-            <Grid RowDefinitions="*,Auto,45" Margin="0,40,0,0">
+            <Grid Margin="0,40,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="45"/>
+                </Grid.RowDefinitions>
                 <Frame x:Name="shellFrame" Grid.Row="0"/>
                 <Border CornerRadius="0" Grid.Row="2" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}">
-                    <Grid ColumnDefinitions="200,15,*,15,200" x:Name="StatusBar">
+                    <Grid x:Name="StatusBar">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="15"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="15"/>
+                            <ColumnDefinition Width="200"/>
+                        </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" x:Name="StatusBarText" VerticalAlignment="Center" HorizontalAlignment="Left" Text="Status: Idle" FontSize="12" Margin="20,0,0,0"/>
                         <Border Grid.Column="1" Width="2" Height="20" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"  />
                         <ProgressBar x:Name="ImagingProgressBar" Grid.Column="2" Width="Auto" Margin="25,0,25,0" Visibility="Collapsed"/>
@@ -66,5 +78,24 @@
             </StackPanel>
         </Border>
         <!--#endregion-->
+        <Grid Margin="0,30,10,0" Padding="20" HorizontalAlignment="Right" VerticalAlignment="Top">
+            <InfoBar Title="Imaging Complete" Severity="Success" IsOpen="True" CornerRadius="8">
+                <InfoBar.Content>
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Text="Source: " FontWeight="SemiBold"/>
+                        <TextBlock Text="\\.\PHYSICALDRIVE1" TextWrapping="Wrap"/>
+                        <TextBlock Text="Destination" Margin="0,10,0,0" FontWeight="SemiBold"/>
+                        <TextBlock TextWrapping="Wrap">
+                            <Hyperlink Click="OpenPathInExplorer" NavigateUri="F:\">F:\</Hyperlink>
+                        </TextBlock>
+                        
+                        <TextBlock Text="Log" Margin="0,10,0,0" FontWeight="SemiBold"/>
+                        <TextBlock TextWrapping="Wrap">
+                            <Hyperlink Click="OpenPathInExplorer" NavigateUri="E:\">E:\</Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+                </InfoBar.Content>
+            </InfoBar>
+        </Grid>
     </Grid>
 </Window>

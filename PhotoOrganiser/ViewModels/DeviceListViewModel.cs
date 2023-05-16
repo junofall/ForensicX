@@ -19,6 +19,7 @@ using Microsoft.UI.Xaml;
 using CommunityToolkit.WinUI;
 using Microsoft.UI.Xaml.Controls;
 using System.Threading;
+using ForensicX.Models.Disks.MBR;
 
 namespace ForensicX.ViewModels
 {
@@ -36,18 +37,23 @@ namespace ForensicX.ViewModels
         public DeviceListViewModel()
         {
             PhysicalDisks = new ObservableCollection<PhysicalDisk>();
-            LoadDisksCommand = new RelayCommand(LoadDisks);
+            LoadDisksCommand = new RelayCommand(InitializeAsync);
             //ImageDiskCommand = new RelayCommand<string>(async sourcePath => await ImageDisk(sourcePath));
             Dispatcher = DispatcherQueue.GetForCurrentThread();
-            LoadDisks();
+            InitializeAsync();
         }
 
-        private void LoadDisks()
+        private async void InitializeAsync()
+        {
+            await LoadDisksAsync();
+        }
+
+        private async Task LoadDisksAsync()
         {
             PhysicalDisks.Clear();
             string query = "SELECT * FROM Win32_DiskDrive"; // Manually validate query via wbemtest.exe, connect... to 'root\cimv2'
 
-            Dispatcher.EnqueueAsync(() =>
+            await Task.Run(async () =>
             {
                 using (var searcher = new ManagementObjectSearcher(query))
                 using (var results = searcher.Get())
@@ -62,7 +68,7 @@ namespace ForensicX.ViewModels
                                 Model = (string)disk.GetPropertyValue("Model"),
                                 SerialNumber = (string)disk.GetPropertyValue("SerialNumber"),
                                 Size = (ulong)disk.GetPropertyValue("Size"),
-                                LogicalVolumes = new List<LogicalVolume>(),
+                                PartitionEntries = new List<DiskPartitionEntry>(),
                                 MediaType = (string)disk.GetPropertyValue("MediaType"),
 
                                 BytesPerSector = (uint)disk.GetPropertyValue("BytesPerSector"),
@@ -76,8 +82,7 @@ namespace ForensicX.ViewModels
                                 TracksPerCylinder = (uint)disk.GetPropertyValue("TracksPerCylinder")
                             };
 
-
-                            // Get the logical volumes for the physical disk
+                            // Get the partitions for the physical disk
                             string assocClass = "Win32_DiskDriveToDiskPartition";
                             string query2 = $"ASSOCIATORS OF {{Win32_DiskDrive.DeviceID='{physicalDisk.DeviceID}'}} WHERE AssocClass = {assocClass}";
 
@@ -86,6 +91,17 @@ namespace ForensicX.ViewModels
                             {
                                 foreach (var partition in results2)
                                 {
+                                    var partitionEntry = new DiskPartitionEntry
+                                    {
+                                        DeviceID = (string)partition.GetPropertyValue("DeviceID"),
+                                        Type = (string)partition.GetPropertyValue("Type"),
+                                        Bootable = (bool)partition.GetPropertyValue("Bootable"),
+                                        PrimaryPartition = (bool)partition.GetPropertyValue("PrimaryPartition"),
+                                        Size = (ulong)partition.GetPropertyValue("Size"),
+                                        StartingOffset = (ulong)partition.GetPropertyValue("StartingOffset"),
+                                        Volumes = new List<LogicalVolume>(),
+                                    };
+
                                     string query3 = $"ASSOCIATORS OF {{Win32_DiskPartition.DeviceID='{partition["DeviceID"]}'}} WHERE AssocClass = Win32_LogicalDiskToPartition";
 
                                     using (var searcher3 = new ManagementObjectSearcher(query3))
@@ -112,18 +128,23 @@ namespace ForensicX.ViewModels
                                                 StartingOffset = startingOffset
 
                                             };
-                                            if (physicalDisk != null)
+
+                                            if (partitionEntry != null)
                                             {
-                                                physicalDisk.LogicalVolumes.Add(logicalVolume);
+                                                partitionEntry.Volumes.Add(logicalVolume);
                                             }
                                         }
+                                    }
+                                    if(partitionEntry != null)
+                                    {
+                                        physicalDisk.PartitionEntries.Add(partitionEntry);
                                     }
                                 }
                             }
 
                             if (physicalDisk != null)
                             {
-                                PhysicalDisks.Add(physicalDisk);
+                                await Dispatcher.EnqueueAsync(() => { PhysicalDisks.Add(physicalDisk); });
                             }
                         }
                     }

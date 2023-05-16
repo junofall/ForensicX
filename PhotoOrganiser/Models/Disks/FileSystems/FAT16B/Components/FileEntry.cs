@@ -22,6 +22,8 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B.Components
             return Name;
         }
 
+        public FileSystem FileSystem { get; set; }
+
         public string Name { get; set; }
         public string Extension { get; set; }
         public string FilePath { get; set; }
@@ -33,6 +35,7 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B.Components
         public DateTime LastModifiedTime { get; set; }
         public List<ushort> ClusterChain { get; set; }
         public List<FileEntry> Children { get; set; }
+        public byte[] Data { get; set; }
 
         [Flags]
         public enum FileAttributes : byte

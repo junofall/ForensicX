@@ -17,6 +17,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Principal;
+using System.Threading.Tasks;
 using Windows.ApplicationModel.Core;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -34,6 +35,7 @@ namespace ForensicX.Views
     
     public sealed partial class DeviceListView : Page
     {
+        private InfoBar adminRightsInfoBar;
         private ContentDialog dialog;
         private ImageDiskDialogContent dialogContent;
         private DeviceListViewModel viewModel;
@@ -42,11 +44,41 @@ namespace ForensicX.Views
         {
             this.InitializeComponent();
             viewModel = (DeviceListViewModel)DataContext;
-            Debug.WriteLine("Process Elevated? " + isElevated());
+        }
+
+        private void InfoBar_Closed(InfoBar sender, InfoBarClosedEventArgs args)
+        {
+            adminRightsInfoBar = null;
         }
 
         private async void ShowDialog_Click(object sender, RoutedEventArgs e)
         {
+            bool isElevated;
+            using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+            {
+                WindowsPrincipal principal = new WindowsPrincipal(identity);
+                isElevated = principal.IsInRole(WindowsBuiltInRole.Administrator);
+            }
+
+            if (!isElevated)
+            {
+                if(adminRightsInfoBar == null)
+                {
+                    adminRightsInfoBar = new InfoBar
+                    {
+                        Severity = InfoBarSeverity.Warning,
+                        IsOpen = true,
+                        IsClosable = true,
+                        Title = "Administrative Rights Required",
+                        Message = "Physical disk access requires administrative rights. Please restart the application with administrative privileges.",
+                    };
+
+                    infoBarContainer.Children.Add(adminRightsInfoBar);
+                }
+                
+                return;
+            }
+
             dialog = new ContentDialog();
 
             dialogContent = new ImageDiskDialogContent(viewModel);
@@ -139,16 +171,6 @@ namespace ForensicX.Views
             // Disable the primary button if the input fields are not valid
             dialog.IsPrimaryButtonEnabled = dialogContent.isPathValid;
             Debug.WriteLine("Is Path Valid? : " + dialogContent.isPathValid);
-        }
-
-        private bool isElevated()
-        {
-            bool isElevated;
-            using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
-            {
-                WindowsPrincipal principal = new WindowsPrincipal(identity);
-                return principal.IsInRole(WindowsBuiltInRole.Administrator);
-            }
         }
     }
 }

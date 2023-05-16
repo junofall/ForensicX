@@ -1,4 +1,5 @@
 ﻿using ForensicX.Helpers;
+using ForensicX.Interfaces;
 using ForensicX.Models.Disks.FileSystems.FAT16B.Components;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ using WinRT;
 
 namespace ForensicX.Models.Disks.FileSystems.FAT16B
 {
-    public class FAT16BFileSystem : FileSystem
+    public class FAT16BFileSystem : FileSystem, IReadableFileSystem
     {
         public Disk ParentDisk;             // The containing Disk
         public Partition ParentPartition;   // The containing Partition
@@ -26,6 +27,7 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
         public FAT16BFileSystem(Volume parentVolume)
         {
             ParentVolume = parentVolume;
+            parentVolume.Type = "FAT16B";
             ParentPartition = ParentVolume.ParentPartition;
             ParentDisk = ParentPartition.ParentDisk;
 
@@ -40,7 +42,7 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
 
             foreach(FileEntry child in RootDirectoryRegion.Children)
             {
-                ParentPartition.Children.Add(child);
+                ParentVolume.Children.Add(child);
             }
         }
 
@@ -199,6 +201,7 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
                     var shortFileName = (char)entryByte + Encoding.ASCII.GetString(directoryBytes, offset + 1, 7).TrimEnd();
                     var fileEntry = new FileEntry
                     {
+                        FileSystem = this,
                         Name = "",
                         Extension = Encoding.ASCII.GetString(directoryBytes, offset + 8, 3).TrimEnd(),
                         Attributes = (FileEntry.FileAttributes)(FileAttributes)directoryBytes[offset + 11],
@@ -293,6 +296,24 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
             Console.WriteLine("=====================================");
             //Console.WriteLine($"BootCode: {BitConverter.ToString(vbr.BootCode)}");
             //Console.WriteLine($"BootSectorSignature: 0x{vbr.BootSectorSignature:X}");
+        }
+
+        public override void LoadFileEntryData(FileEntry file)
+        {
+            try
+            {
+                if (!file.IsDirectory)
+                {
+                    using var stream = new FileStream(ParentDisk.ImagePath, FileMode.Open, FileAccess.Read);
+                    (byte[] fileData, _, _) = Fat16BFileExtractor.ExtractFileFromClusterChain(file.ClusterChain, DataRegion.StartSector, (uint)file.FileSize, stream, vbr, DataRegion.StartSector);
+
+                    file.Data = fileData;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error reading file contents: {ex.Message}");
+            }
         }
 
         public void ExtractFile(FileEntry file, ulong firstDataSector, string directoryPath)

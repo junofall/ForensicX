@@ -23,7 +23,7 @@
     <AppxBundle>Always</AppxBundle>
     <AppxBundlePlatforms>x64</AppxBundlePlatforms>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-    <AppxPackageDir>C:\Users\johnm\Documents\ForensicX-Package-Test-diskview\</AppxPackageDir>
+    <AppxPackageDir>C:\Users\johnm\Documents\ForensicX-Package-Test-ElevationTest\</AppxPackageDir>
     <GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
 	<WindowsAppSDKSelfContained>False</WindowsAppSDKSelfContained>
   </PropertyGroup>
@@ -31,6 +31,7 @@
     <None Remove="Controls\Dialogs\ImageDiskDialogContent.xaml" />
     <None Remove="Controls\Loading\DiskLoadingAnimation.xaml" />
     <None Remove="Controls\Views\HexViewer.xaml" />
+    <None Remove="Views\EvidenceDashboard.xaml" />
     <None Remove="Views\EvidenceView.xaml" />
     <None Remove="Views\HomeView.xaml" />
     <None Remove="Views\SubViews\DiskView.xaml" />
@@ -56,6 +57,10 @@
     <PackageReference Include="CommunityToolkit.WinUI.UI.Controls" Version="7.1.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.2.206-beta">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.2.221109.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.755" />
     <PackageReference Include="System.Management" Version="7.0.0" />
@@ -102,6 +107,11 @@
     <Folder Include="Assets\Icons\" />
     <Folder Include="Models\Disks\FileSystems\FAT32\Components\" />
     <Folder Include="Models\Disks\FileSystems\NTFS\Components\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Views\EvidenceDashboard.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Views\HomeView\FileView.xaml">

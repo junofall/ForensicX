@@ -33,7 +33,7 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe8a5;" FontSize="48" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10"/>
-                <TextBlock Text="{x:Bind Name}" Grid.Row="1" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Top" MaxWidth="100" Margin="0,5,0,0"/>
+                <TextBlock Text="{x:Bind Name}" Grid.Row="1" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Top" MaxWidth="90" Margin="0,5,0,0"/>
             </Grid>
         </DataTemplate>
 
@@ -134,26 +134,52 @@
                     <StackPanel>
                         <CommandBar Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" HorizontalAlignment="Left">
                             <AppBarButton Icon="Add" Label="Add" Command="{x:Bind ViewModel.AddEvidenceCommand}"/>
-                            <AppBarButton Icon="Remove" Label="Remove"/>
+                            <AppBarButton x:Name="RemoveButton" Icon="Remove" Label="Remove" Command="{x:Bind ViewModel.RemoveEvidenceCommand}"/>
                         </CommandBar>
                         <TreeView x:Name="EvidenceTreeView" Margin="5 0 5 0" ItemInvoked="EvidenceTreeView_ItemInvoked"/>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
 
+            <Grid x:Name="EvidenceItemAddingBox" Grid.Column="0" Background="{ThemeResource SmokeFillColorDefaultBrush}" CornerRadius="8" Margin="0, 0, 10, 0" Visibility="Collapsed">
+                <Grid Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="8" Height="70" Width="170" Padding="15" Margin="12">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <ProgressRing IsActive="True"/>
+                        <TextBlock Text="Adding Item..." Margin="15, 3, 4, 4"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
             <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="50"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <StackPanel Grid.Row="0" x:Name="FileExplorerView" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="8" MaxHeight="50">
+
+                <StackPanel Grid.Row="0" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="8" Height="50">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <CommandBar>
+                            <CommandBar.PrimaryCommands>
+                                <AppBarButton Icon="AttachCamera" Label="Attach Camera"/>
+                                <AppBarSeparator />
+                                <AppBarButton Icon="Like" Label="Like"/>
+                                <AppBarButton Icon="Dislike" Label="Dislike"/>
+                                <AppBarSeparator />
+                                <AppBarButton Icon="Orientation" Label="Orientation"/>
+                            </CommandBar.PrimaryCommands>
+                        </CommandBar>
+                    </StackPanel>
+                </StackPanel>
+                
+                <StackPanel Grid.Row="1" x:Name="FileExplorerView" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="8" Height="50" Margin="0,10,0,0">
                     <!-- Bind your ListView items here, configure the layout to be similar to Windows Explorer -->
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="UpButton" Margin="5" HorizontalAlignment="Right" Height="40" Click="UpButton_Click" IsEnabled="False">
                             <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xf0ad;" FontSize="12"/>
                         </Button>
-                        <BreadcrumbBar x:Name="Breadcrumb_CurrentItemSelected" Margin="15,10,0,0" ItemClicked="Breadcrumb_CurrentItemSelected_ItemClicked">
+                        <BreadcrumbBar x:Name="Breadcrumb_CurrentItemSelected" Margin="15,12,0,0" ItemClicked="Breadcrumb_CurrentItemSelected_ItemClicked">
                             <BreadcrumbBar.ItemTemplate>
                                 <DataTemplate x:DataType="models:BreadcrumbBarFolder">
                                     <BreadcrumbBarItem Content="{Binding}" AutomationProperties.Name="{Binding Name}">
@@ -166,22 +192,24 @@
                                 </DataTemplate>
                             </BreadcrumbBar.ItemTemplate>
                         </BreadcrumbBar>
-                        
                     </StackPanel>
                 </StackPanel>
-                
-                <StackPanel Grid.Row="1" x:Name="FileExplorerViewBody" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="8" Margin="0,10,0,0">
+
+                <Grid Grid.Row="2" x:Name="FileExplorerViewBody" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="8" Margin="0,10,0,0">
                     <!-- Bind your ListView items here, configure the layout to be similar to Windows Explorer -->
-                    <GridView x:Name="ChildrenGridView" Margin="10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Padding="10" ItemTemplateSelector="{StaticResource FileEntryTemplateSelector}" ScrollViewer.CanContentRenderOutsideBounds="False" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <GridView x:Name="ChildrenGridView" Visibility="Collapsed" Margin="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Padding="0" ItemTemplateSelector="{StaticResource FileEntryTemplateSelector}" ScrollViewer.VerticalScrollBarVisibility="Auto" ItemClick="ChildrenGridView_ItemClick" IsItemClickEnabled="True" PointerPressed="ChildrenGridView_PointerPressed">
                         <GridView.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <local:VariableRowHeightWrapPanel/>
                             </ItemsPanelTemplate>
                         </GridView.ItemsPanel>
                     </GridView>
-                </StackPanel>
 
-                <NavigationView x:Name="subviewNavigation" PaneDisplayMode="Top"  SelectionFollowsFocus="Disabled" IsBackButtonVisible="Collapsed" Grid.Row="2" IsSettingsVisible="False" SelectionChanged="SubviewNavigated_SelectionChanged">
+                    <local:EvidenceDashboard x:Name="EvidenceDashboard" Visibility="Collapsed"/>
+                </Grid>
+
+
+                <NavigationView x:Name="subviewNavigation" PaneDisplayMode="Top"  SelectionFollowsFocus="Disabled" IsBackButtonVisible="Collapsed" Grid.Row="3" IsSettingsVisible="False" SelectionChanged="SubviewNavigated_SelectionChanged">
                     <NavigationView.MenuItems>
                         <NavigationViewItem Icon="Character" Content="Text" x:Name="TextViewNavItem" ToolTipService.ToolTip="Text view" Tag="TextView"/>
                         <NavigationViewItem Icon="Memo" Content="Hex" x:Name="HexViewNavItem" ToolTipService.ToolTip="Hex view" Tag="HexView"/>

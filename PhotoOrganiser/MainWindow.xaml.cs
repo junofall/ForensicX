@@ -20,6 +20,9 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
 using Microsoft.Toolkit.Uwp.Notifications;
+using Microsoft.UI.Xaml.Documents;
+using Windows.System;
+using System.Diagnostics;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -54,6 +57,13 @@ public sealed partial class MainWindow : Window
         shellFrame.Navigate(typeof(HomeView));
     }
 
+    private async void OpenPathInExplorer(Hyperlink sender, HyperlinkClickEventArgs args)
+    {
+        var path = ((Run)sender.Inlines[0]).Text;
+        IStorageFolder storageFolder = await StorageFolder.GetFolderFromPathAsync(path);
+        await Launcher.LaunchFolderAsync(storageFolder);
+    }
+
     private void OnProgressUpdated(double progress)
     {
         ProgressUpdated?.Invoke(this, progress);
@@ -82,15 +92,15 @@ public sealed partial class MainWindow : Window
             {
                 case "HomeView":
                     shellFrame.Navigate(typeof(HomeView));
-                    Title = "Home";
+                    Title = "ForensicX | Home";
                     break;
                 case "FileDetailsView":
                     shellFrame.Navigate(typeof(EvidenceView));
-                    Title = "File Details";
+                    Title = "ForensicX | File Details";
                     break;
                 case "DeviceListView":
                     shellFrame.Navigate(typeof(DeviceListView));
-                    Title = "Volume List";
+                    Title = "ForensicX | Volume List";
                     break;
             }
         }

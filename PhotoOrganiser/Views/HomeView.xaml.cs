@@ -18,6 +18,9 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using ForensicX.Models.Evidence;
+using Windows.Storage.Streams;
+using ForensicX.Interfaces;
+using System.Diagnostics;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -31,6 +34,30 @@ namespace ForensicX.Views
     {
         public HomeViewViewModel ViewModel { get; set; }
 
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            base.OnNavigatedTo(e);
+            ViewModel.DataReady += ViewModel_DataReady;
+            // Set up any other necessary event subscriptions or bindings here
+            RebuildTreeView();
+
+        }
+
+        private void RebuildTreeView()
+        {
+            foreach (EvidenceItem eItem in ViewModel.EvidenceItems)
+            {
+                InitializeTreeView(eItem);
+            }
+        }
+
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            base.OnNavigatedFrom(e);
+            ViewModel.DataReady -= ViewModel_DataReady;
+            // Clean up any other event subscriptions or bindings here
+        }
+
         public class FileItem
         {
             public string Name { get; set; }
@@ -41,11 +68,15 @@ namespace ForensicX.Views
         public HomeView()
         {
             this.InitializeComponent();
-            ViewModel = new HomeViewViewModel();
+            ViewModel = ((ViewModelLocator)Application.Current.Resources["ViewModelLocator"]).HomeViewViewModel;
             DataContext = ViewModel;
-            ViewModel.DataReady += ViewModel_DataReady;
+            ViewModel.IsAddingEvidenceItemChanged += ViewModel_IsAddingEvidenceItemChanged;
         }
 
+        private void ViewModel_IsAddingEvidenceItemChanged(object sender, bool isAdding)
+        {
+            EvidenceItemAddingBox.Visibility = isAdding ? Visibility.Visible : Visibility.Collapsed;
+        }
 
 
         private void EvidenceTreeView_ItemInvoked(object sender, TreeViewItemInvokedEventArgs e)
@@ -53,17 +84,88 @@ namespace ForensicX.Views
             if (e.InvokedItem is TreeViewNode selectedItem)
             {
                 UpdateBreadcrumb(selectedItem);
+                UpdateChildrenGridView(selectedItem);
                 // Enable or disable the Up button based on the existence of a parent node
                 UpButton.IsEnabled = selectedItem.Parent != null;
+                RemoveButton.IsEnabled = selectedItem.Parent != null;
+            }
+            else
+            {
+                Debug.WriteLine("EvidenceTreeView_ItemInvoked was of unknown type " + e.GetType());
+            }
+        }
 
-                // If the selected node represents a directory, set the ItemsSource of the GridView to its children
-                if (selectedItem.Content is FileEntry fileEntry && fileEntry.IsDirectory)
+        private void ChildrenGridView_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (e.ClickedItem is FileEntry fileEntry && !fileEntry.IsDirectory)
+            {
+                FileSystem fileSystem = fileEntry.FileSystem;
+
+                // Call ReadFileContents method on the IReadableFileSystem instance in the ViewModel
+                fileSystem.LoadFileEntryData(fileEntry);
+
+                // Now the fileEntry object should have the Data property set with the file contents
+                // Print the file data in hex
+                string hexData = BitConverter.ToString(fileEntry.Data).Replace("-", " ");
+                Debug.WriteLine($"File data (hex): {hexData}");
+            }
+            else
+            {
+                Debug.WriteLine(e.GetType());
+            }
+        }
+
+        private void ChildrenGridView_PointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            if (e.GetCurrentPoint(sender as UIElement).Properties.IsRightButtonPressed)
+            {
+                var itemsControl = (ItemsControl)sender;
+                var result = VisualTreeHelper.FindElementsInHostCoordinates(e.GetCurrentPoint(null).Position, itemsControl);
+                var clickedItemContainer = result.OfType<GridViewItem>().FirstOrDefault();
+
+                if (clickedItemContainer != null)
                 {
-                    ChildrenGridView.ItemsSource = fileEntry.Children;
-                }
-                else
-                {
-                    ChildrenGridView.ItemsSource = null;
+                    FileEntry fileEntry = (FileEntry)clickedItemContainer.Content;
+
+                    // Create the context menu
+                    var contextMenu = new MenuFlyout();
+
+                    if (fileEntry.IsDirectory)
+                    {
+                        // Add context menu options specific to directories
+                        var dirOpenMenuItem = new MenuFlyoutItem { Text = "Open" };
+                        dirOpenMenuItem.Click += (s, args) =>
+                        {
+                            // Handle the directory opening logic here
+                        };
+                        contextMenu.Items.Add(dirOpenMenuItem);
+
+                        contextMenu.Items.Add(new MenuFlyoutSeparator());
+
+                        // Add context menu options specific to directories
+                        var dirExtractMenuItem = new MenuFlyoutItem { Text = "Extract Directory..." };
+                        dirExtractMenuItem.Click += (s, args) =>
+                        {
+                            // Handle the directory opening logic here
+                        };
+                        contextMenu.Items.Add(dirExtractMenuItem);
+                    }
+                    else
+                    {
+                        // Add context menu options specific to files
+                        var extractMenuItem = new MenuFlyoutItem { Text = "Extract File..." };
+                        extractMenuItem.Click += (s, args) =>
+                        {
+                            // Handle the extraction logic here
+                        };
+                        contextMenu.Items.Add(extractMenuItem);
+                    }
+
+                    // Add any common context menu options for both files and directories here
+                    // ...
+
+                    // Show the context menu
+                    contextMenu.ShowAt(itemsControl, e.GetCurrentPoint(itemsControl).Position);
                 }
             }
         }
@@ -89,16 +191,23 @@ namespace ForensicX.Views
                     pathItems.Insert(0, new BreadcrumbBarFolder { Name = diskImageEvidence.Name });
                     System.Diagnostics.Debug.WriteLine("Content: " + diskImageEvidence.Name);
                 }
-
-                System.Diagnostics.Debug.WriteLine("Content: " + selectedItem.Content);
-
+                else if (selectedItem.Content is Volume volume)
+                {
+                    pathItems.Insert(0, new BreadcrumbBarFolder { Name = volume.Name });
+                    System.Diagnostics.Debug.WriteLine("Content: " + volume.Name);
+                }
+                else if (selectedItem.Content.ToString() == "[rootdir]")
+                {
+                    pathItems.Insert(0, new BreadcrumbBarFolder { Name = "[rootdir]" });
+                    System.Diagnostics.Debug.WriteLine("Content: [rootdir]");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("BreadcrumbBar - Unhandled Content: " + selectedItem.Content);
+                }
 
                 selectedItem = selectedItem.Parent;
             }
-
-            
-
-
             Breadcrumb_CurrentItemSelected.ItemsSource = pathItems;
         }
 
@@ -107,8 +216,15 @@ namespace ForensicX.Views
             // Get the clicked folder
             BreadcrumbBarFolder clickedFolder = args.Item as BreadcrumbBarFolder;
 
-            // Traverse the tree view and select the corresponding item
-            SelectItemInTreeView(EvidenceTreeView.RootNodes, clickedFolder);
+            // Get the target partition name
+            string targetPartitionName = null;
+            if (args.Index > 0)
+            {
+                targetPartitionName = (Breadcrumb_CurrentItemSelected.ItemsSource as ObservableCollection<BreadcrumbBarFolder>)[args.Index - 1].Name;
+            }
+
+            // Traverse the tree view and select the corresponding item within the target partition
+            SelectItemInTreeView(EvidenceTreeView.RootNodes, clickedFolder, targetPartitionName);
 
             // Update the breadcrumb bar
             var items = Breadcrumb_CurrentItemSelected.ItemsSource as ObservableCollection<BreadcrumbBarFolder>;
@@ -128,6 +244,7 @@ namespace ForensicX.Views
                 {
                     EvidenceTreeView.SelectedNode = parentNode;
                     UpdateBreadcrumb(parentNode);
+                    UpdateChildrenGridView(parentNode);
                 }
                 // Enable or disable the Up button based on the existence of a parent node
                 UpButton.IsEnabled = currentNode.Parent != null && currentNode.Parent.Parent != null;
@@ -135,19 +252,67 @@ namespace ForensicX.Views
             
         }
 
-        private bool SelectItemInTreeView(IList<TreeViewNode> nodes, BreadcrumbBarFolder targetFolder)
+        private void UpdateChildrenGridView(TreeViewNode selectedItem)
+        {
+            Debug.WriteLine("UpdateChildrenGridView method invoked.");
+            if (selectedItem.Content is FileEntry fileEntry && fileEntry.IsDirectory)
+            {
+                ChildrenGridView.Visibility = Visibility.Visible;
+                ChildrenGridView.ItemsSource = fileEntry.Children;
+                EvidenceDashboard.Visibility = Visibility.Collapsed;
+            }
+            else if (selectedItem.Content is EvidenceItem eItem)
+            {
+                EvidenceDashboard.Visibility = Visibility.Visible;
+                EvidenceDashboard.EvidenceItem = eItem;
+                ViewModel.UpdateSelectedEvidenceItem(eItem);
+                ChildrenGridView.Visibility = Visibility.Collapsed;
+                ChildrenGridView.ItemsSource = null;
+            }
+            else if (selectedItem.Content is Partition partition)
+            {
+                EvidenceDashboard.Visibility = Visibility.Collapsed;
+                ChildrenGridView.Visibility = Visibility.Visible;
+            }
+            else if (selectedItem.Content.ToString() == "[rootdir]")
+            {
+                if (selectedItem.Parent.Parent != null && selectedItem.Parent.Parent.Content is Partition partition1)
+                {
+                    EvidenceDashboard.Visibility = Visibility.Collapsed;
+                    ChildrenGridView.Visibility = Visibility.Visible;
+                    ChildrenGridView.ItemsSource = partition1.Volume.Children;
+                }
+            }
+            else
+            {
+                Debug.WriteLine("UpdateChildrenGridView TreeViewNode content was of unknown type " + selectedItem.Content.GetType());
+                ChildrenGridView.ItemsSource = null;
+            }
+        }
+
+        private bool SelectItemInTreeView(IList<TreeViewNode> nodes, BreadcrumbBarFolder targetFolder, string targetPartitionName = null)
         {
             foreach (TreeViewNode node in nodes)
             {
-                if (node.Content.ToString() == targetFolder.Name)
+                bool isMatchingNode = node.Content.ToString() == targetFolder.Name;
+                if (targetPartitionName != null && node.Parent != null && node.Parent.Parent.Content != null)
+                {
+                    isMatchingNode &= node.Parent.Parent.Content.ToString() == targetPartitionName;
+                }
+
+                if (isMatchingNode)
                 {
                     // Select the matching item and return true
                     EvidenceTreeView.SelectedNode = node;
+
+                    // Update the ChildrenGridView
+                    UpdateChildrenGridView(node);
+
                     return true;
                 }
 
                 // Recursively search the children nodes
-                if (SelectItemInTreeView(node.Children, targetFolder))
+                if (SelectItemInTreeView(node.Children, targetFolder, targetPartitionName))
                 {
                     // Item found in the children, return true
                     return true;

@@ -11,14 +11,17 @@ namespace ForensicX.Models.Factory
     {
         public static FileSystem CreateFileSystem(byte partitionType, Volume parentVolume)
         {
+            FileSystem fileSystem;
             switch (partitionType)
             {
                 case 0x06:
-                    return new FAT16BFileSystem(parentVolume);
+                    fileSystem = new FAT16BFileSystem(parentVolume);
+                    return fileSystem;
                 case 0x0C:
                     return null; // LBA
                 case 0x0E:
-                    return new FAT16BFileSystem(parentVolume); //LBA
+                    fileSystem = new FAT16BFileSystem(parentVolume);
+                    return fileSystem;
                 case 0x07:
                     return null; // Could be either exFAT or NTFS.
                 default:

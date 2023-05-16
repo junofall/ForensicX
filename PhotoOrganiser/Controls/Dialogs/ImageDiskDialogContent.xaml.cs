@@ -20,6 +20,8 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using ForensicX.ViewModels;
 using ForensicX.Models;
+using Windows.Win32;
+using System.Runtime.InteropServices;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -42,41 +44,51 @@ namespace ForensicX.Controls.Dialogs
             this.DataContext = viewModel;
         }
 
-        private async void BrowseButton_Click(object sender, RoutedEventArgs e)
+        private unsafe async void BrowseButton_Click(object sender, RoutedEventArgs e)
         {
-            // Clear previous returned file name, if it exists, between iterations of this scenario
-            OutputFolderPath.Text = "";
-
-            // Create a folder picker
-            FolderPicker openPicker = new FolderPicker();
-
-            var window = (Application.Current as App)?._window as MainWindow;
-
-            // Retrieve the window handle (HWND) of the current WinUI 3 window.
-            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
-
-            // Initialize the folder picker with the window handle (HWND).
-            WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
-
-            // Set options for your folder picker
-            openPicker.SuggestedStartLocation = PickerLocationId.Desktop;
-            openPicker.FileTypeFilter.Add("*");
-
-            // Open the picker for the user to pick a folder
-            StorageFolder folder = await openPicker.PickSingleFolderAsync();
-            if (folder != null)
+            try
             {
-                StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder);
-                OutputFolderPath.Text = folder.Path;
+                // Use the CoreDispatcher to update the UI on the main thread
+                var window = (Application.Current as App)?._window as MainWindow;
+
+                // Retrieve the window handle (HWND) of the current WinUI 3 window.
+                var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+
+                int hr = PInvoke.CoCreateInstance(
+                typeof(Windows.Win32.UI.Shell.FileOpenDialog).GUID,
+                null,
+                Windows.Win32.System.Com.CLSCTX.CLSCTX_INPROC_SERVER,
+                typeof(Windows.Win32.UI.Shell.IFileOpenDialog).GUID,
+                out var obj);
+                if (hr < 0)
+                {
+                    Marshal.ThrowExceptionForHR(hr);
+                }
+
+                Windows.Win32.UI.Shell.IFileOpenDialog fod = (Windows.Win32.UI.Shell.IFileOpenDialog)obj;
+
+                // Set the dialog to be a folder picker.
+                fod.SetOptions(Windows.Win32.UI.Shell.FILEOPENDIALOGOPTIONS.FOS_PICKFOLDERS);
+
+                // Show the dialog.
+                fod.Show(new Windows.Win32.Foundation.HWND(hWnd));
+
+                // Get the selected folder.
+                fod.GetResult(out var ppsi);
+
+                Windows.Win32.Foundation.PWSTR folderPath;
+                ppsi.GetDisplayName(Windows.Win32.UI.Shell.SIGDN.SIGDN_FILESYSPATH, &folderPath);
+
+                // Set the folder path.
+                OutputFolderPath.Text = folderPath.ToString();
                 SelectedFileName = FileNameTextBox.Text;
                 FullDestinationPath = OutputFolderPath.Text + @"\" + SelectedFileName + ".dd";
                 FullOutPath.Text = FullDestinationPath;
             }
-            else
+            catch(Exception ex)
             {
-                OutputFolderPath.Text = "";
+                Debug.WriteLine("Exception: " + ex.Message);
             }
-
         }
 
         public void UpdateOutPath(object sender, RoutedEventArgs e)

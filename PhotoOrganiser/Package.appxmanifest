@@ -10,7 +10,7 @@
   <Identity
     Name="46187Junofall.ForensicX"
     Publisher="CN=4FBF34CB-1FFC-4358-832C-2B8235D1077D"
-    Version="0.1.3.0" />
+    Version="0.1.4.0" />
 
   <Properties>
     <DisplayName>ForensicX</DisplayName>

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ForensicX.Models.Disks.FileSystems.FAT16B.Components;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,6 +19,11 @@ namespace ForensicX.Models.Disks.FileSystems.FAT32
             ParentVolume = parentVolume;
             ParentPartition = ParentVolume.ParentPartition;
             ParentDisk = ParentPartition.ParentDisk;
+        }
+
+        public override void LoadFileEntryData(FileEntry file)
+        {
+            throw new NotImplementedException();
         }
     }
 }

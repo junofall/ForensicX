@@ -25,7 +25,7 @@ namespace ForensicX.Models.Disks
         public byte Type { get; set; }
         public ulong LogicalSectorOffset { get; set; }
         public ulong PhysicalSectorOffset { get; set; } //So we can tell where Logical Sector 0 is.
-        public List<FileEntry> Children { get; set; } = new List<FileEntry>();
+        public ulong PartitionLength { get; set; }
 
         public Partition(PartitionEntry partitionEntry, Disk parentDisk, ulong physicalSectorOffset, ulong logicalSectorOffset)
         {
