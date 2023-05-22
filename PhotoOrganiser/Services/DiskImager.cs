@@ -40,6 +40,8 @@ namespace ForensicX.Services
                 int progress = 0;
                 Stopwatch sw = new Stopwatch();
 
+                //Save start time
+                DateTime startTime = DateTime.Now;
 
                 byte[] sourceMd5Hash;
                 byte[] sourceSha1Hash;
@@ -129,7 +131,7 @@ namespace ForensicX.Services
                 }
 
                 // Reopen file and validate
-                CmpSrcDstHashes(cancellationToken, sourceMd5Hash, sourceSha1Hash);
+                CmpSrcDstHashes(cancellationToken, sourceMd5Hash, sourceSha1Hash, startTime);
                 
             }
             catch(OperationCanceledException oce)
@@ -138,7 +140,7 @@ namespace ForensicX.Services
             }
         }
 
-        private void CmpSrcDstHashes(CancellationToken cancellationToken, byte[] srcMd5Hash, byte[] srcSha1Hash)
+        private void CmpSrcDstHashes(CancellationToken cancellationToken, byte[] srcMd5Hash, byte[] srcSha1Hash, DateTime startTime)
         {
             Stopwatch sw = new Stopwatch();
             Debug.WriteLine("Validating Hashes, this may take a while...");
@@ -197,6 +199,25 @@ namespace ForensicX.Services
 
             Debug.WriteLine($"MD5 Checksums match: {md5Match}");
             Debug.WriteLine($"SHA1 Checksums match: {sha1Match}");
+
+            // Write hashes and start time to a .txt file
+            string textFilePath = TargetFilePath += ".txt";
+            using (StreamWriter swr = new StreamWriter(textFilePath))
+            {
+                swr.WriteLine($"=========================");
+                swr.WriteLine($"ForensicX Imaging Log");
+                swr.WriteLine($"=========================");
+                swr.WriteLine($"Imaging Start Time      : {startTime}");
+                swr.WriteLine("\n");
+                swr.WriteLine($"MD5 Checksums match     : {md5Match}");
+                swr.WriteLine($"SHA1 Checksums match    : {sha1Match}");
+                swr.WriteLine("\n");
+                swr.WriteLine($"Source MD5 Hash         : {BitConverter.ToString(srcMd5Hash).Replace("-", "")}");
+                swr.WriteLine($"Destination MD5 Hash    : {BitConverter.ToString(destMd5Hash).Replace("-", "")}");
+                swr.WriteLine("\n");
+                swr.WriteLine($"Source SHA1 Hash        : {BitConverter.ToString(srcSha1Hash).Replace("-", "")}");
+                swr.WriteLine($"Destination SHA1 Hash   : {BitConverter.ToString(destSha1Hash).Replace("-", "")}");
+            }
         }
 
         private void OnProgressUpdated(double progress)

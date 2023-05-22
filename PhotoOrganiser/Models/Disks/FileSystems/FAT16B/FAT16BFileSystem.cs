@@ -1,14 +1,18 @@
 ﻿using ForensicX.Helpers;
+using ForensicX.Helpers.ErrorHandling;
 using ForensicX.Interfaces;
 using ForensicX.Models.Disks.FileSystems.FAT16B.Components;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Drawing.Imaging;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using WinRT;
 
 namespace ForensicX.Models.Disks.FileSystems.FAT16B
@@ -23,6 +27,10 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
         public FatRegion FatRegion;
         public RootDirectoryRegion RootDirectoryRegion;
         public DataRegion DataRegion;
+
+        //Extraction Logic
+        Dictionary<string, string> successfulExtractions = new Dictionary<string, string>(); //K = name, V = path
+        List<ExtractionError> extractionErrors = new List<ExtractionError>();
 
         public FAT16BFileSystem(Volume parentVolume)
         {
@@ -44,6 +52,11 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
             {
                 ParentVolume.Children.Add(child);
             }
+
+            //foreach(FileEntry file in RootDirectoryRegion.Children)
+            //{
+            //    ExtractFile(file, DataRegion.StartSector, @"E:\DemoTestOutput\ForensicX\FAT16");
+            //}
         }
 
         public VolumeBootRecord InitializeVBR()
@@ -316,6 +329,36 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
             }
         }
 
+        public override async Task LoadFileEntryDataAsync(FileEntry file)
+        {
+            Debug.WriteLine("Hello from LoadFileEntryDataAsync @ FAT16BFileSystem!");
+            try
+            {
+                if (!file.IsDirectory)
+                {
+                    using var stream = new FileStream(ParentDisk.ImagePath, FileMode.Open, FileAccess.Read);
+                    Debug.WriteLine("LoadFileEntryDataAsync: Preparing to extract from cluster chain.");
+                    (byte[] fileData, _, _) = await Fat16BFileExtractor.ExtractFileFromClusterChainAsync(file.ClusterChain, DataRegion.StartSector, (uint)file.FileSize, stream, vbr, DataRegion.StartSector);
+
+                    while(fileData == null)
+                    {
+                        Task.Delay(100);
+                    }
+
+                    file.Data = fileData;
+                }
+                else
+                {
+                    Debug.WriteLine("LoadFileEntryDataAsync: File was a directory, not loading data.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error reading file contents: {ex.Message}");
+            }
+        }
+
+
         public void ExtractFile(FileEntry file, ulong firstDataSector, string directoryPath)
         {
             try
@@ -389,6 +432,145 @@ namespace ForensicX.Models.Disks.FileSystems.FAT16B
             {
                 Debug.WriteLine($"Error extracting file: {ex.Message}");
             }
+        }
+
+        private static string GetBase64Thumbnail(string filePath, int maxWidth, int maxHeight)
+        {
+            using (var image = System.Drawing.Image.FromFile(filePath))
+            {
+                double ratioX = (double)maxWidth / image.Width;
+                double ratioY = (double)maxHeight / image.Height;
+                double ratio = Math.Min(ratioX, ratioY);
+
+                int newWidth = (int)(image.Width * ratio);
+                int newHeight = (int)(image.Height * ratio);
+
+                using (var newImage = new Bitmap(newWidth, newHeight))
+                using (var graphics = Graphics.FromImage(newImage))
+                {
+                    graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                    graphics.DrawImage(image, 0, 0, newWidth, newHeight);
+
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        newImage.Save(memoryStream, ImageFormat.Png);
+                        return Convert.ToBase64String(memoryStream.ToArray());
+                    }
+                }
+            }
+        }
+
+        private static bool HasValidImageExtension(string filename)
+        {
+            var validExtensions = new HashSet<string> { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
+            string fileExtension = Path.GetExtension(filename).ToLower();
+            return validExtensions.Contains(fileExtension);
+        }
+
+        public string GenerateExtractionReport(Dictionary<string, string> successfulExtractions, List<ExtractionError> extractionErrors)
+        {
+            var htmlBuilder = new StringBuilder();
+
+            htmlBuilder.AppendLine("<!DOCTYPE html>");
+            htmlBuilder.AppendLine("<html lang=\"en\">");
+            htmlBuilder.AppendLine("<head>");
+            htmlBuilder.AppendLine("<meta charset=\"UTF-8\">");
+            htmlBuilder.AppendLine("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
+            htmlBuilder.AppendLine("<title>ForensicX | Extraction Report</title>");
+            htmlBuilder.AppendLine("<style>");
+            htmlBuilder.AppendLine("body { font-family: Arial, sans-serif; margin: 40px; }");
+            htmlBuilder.AppendLine("h1, h2 { color: #333; }");
+            htmlBuilder.AppendLine("ul { list-style: none; padding: 0; }");
+            htmlBuilder.AppendLine("li { margin-bottom: 10px; }");
+            htmlBuilder.AppendLine("</style>");
+            htmlBuilder.AppendLine("</head>");
+            htmlBuilder.AppendLine("<body>");
+            htmlBuilder.AppendLine("<h1>ForensicX Extraction Report</h1>");
+
+            htmlBuilder.AppendLine("<h2>");
+            htmlBuilder.AppendLine(successfulExtractions.Count.ToString());
+            htmlBuilder.AppendLine(" Successful Extractions</h2>");
+            if (successfulExtractions.Count > 0)
+            {
+                htmlBuilder.AppendLine("<table border=\"1\" cellpadding=\"5\" cellspacing=\"0\">");
+                htmlBuilder.AppendLine("<tr><th>Preview</th><th>Name</th><th>Path</th></tr>");
+                foreach (KeyValuePair<string, string> successfulExtraction in successfulExtractions)
+                {
+                    string filename = successfulExtraction.Key;
+                    string path = successfulExtraction.Value;
+
+                    htmlBuilder.AppendLine("<tr>");
+                    if (HasValidImageExtension(filename))
+                    {
+                        string thumbnail = GetBase64Thumbnail(path, 250, 250);
+                        htmlBuilder.AppendLine($"<td><img src=\"data:image/jpeg;base64,{thumbnail}\" alt=\"Thumbnail\" /></td>");
+                    }
+                    else
+                    {
+                        htmlBuilder.AppendLine("<td></td>");
+                    }
+
+                    htmlBuilder.AppendLine($"<td>{filename}</td>");
+                    htmlBuilder.AppendLine($"<td>{path}</td>");
+                    htmlBuilder.AppendLine("</tr>");
+                }
+                htmlBuilder.AppendLine("</table>");
+            }
+            else
+            {
+                htmlBuilder.AppendLine("<p>No successful extractions.</p>");
+            }
+
+            htmlBuilder.AppendLine("<h2>");
+            htmlBuilder.AppendLine(extractionErrors.Count.ToString());
+            htmlBuilder.AppendLine(" Extraction Errors</h2>");
+            if (extractionErrors.Count > 0)
+            {
+                htmlBuilder.AppendLine("<table border=\"1\" cellpadding=\"5\" cellspacing=\"0\">");
+                htmlBuilder.AppendLine("<tr><th>Filename</th><th>Error Message</th></tr>");
+
+                foreach (var error in extractionErrors)
+                {
+                    htmlBuilder.AppendLine("<tr>");
+                    htmlBuilder.AppendLine($"<td>{error.Filename}</td>");
+                    htmlBuilder.AppendLine($"<td>{error.ErrorMessage}</td>");
+                    htmlBuilder.AppendLine("</tr>");
+                }
+
+                htmlBuilder.AppendLine("</table>");
+            }
+            else
+            {
+                htmlBuilder.AppendLine("<p>No extraction errors found.</p>");
+            }
+
+            htmlBuilder.AppendLine("</body>");
+            htmlBuilder.AppendLine("</html>");
+
+            return htmlBuilder.ToString();
+        }
+
+
+        public override void ExtractFile(FileEntry file, string directoryPath)
+        {
+            ExtractFile(file, DataRegion.StartSector, directoryPath);
+
+            // list of extraction errors for record keeping or reporting
+            foreach (var error in extractionErrors)
+            {
+                Console.WriteLine($"Error in file {error.Filename}: {error.ErrorMessage}");
+            }
+
+            //Finally, generate HTML Report
+            string reportFilename = directoryPath += "\\ExtractionReport.html";
+            GenerateExtractionReport(successfulExtractions, extractionErrors);
+        }
+
+        public override void ExtractAll()
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -20,11 +20,11 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="Evidence" Style="{ThemeResource CaptionTextBlockStyle}" FontSize="32" FontWeight="SemiBold"/>
+                <TextBlock Grid.Column="0" Text="Extraction" Style="{ThemeResource CaptionTextBlockStyle}" FontSize="32" FontWeight="SemiBold"/>
                 <Button Grid.Column="1" x:Name="Extract" Margin="20,5,0,0" HorizontalAlignment="Right">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe928;"/>
-                        <TextBlock Text="Create Disk Image..." Margin="8,0,0,0"/>
+                        <TextBlock Text="Extract..." Margin="8,0,0,0"/>
                     </StackPanel>
                 </Button>
             </Grid>

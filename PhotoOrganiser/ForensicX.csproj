@@ -37,8 +37,10 @@
     <None Remove="Views\SubViews\DiskView.xaml" />
     <None Remove="Views\SubViews\FileView.xaml" />
     <None Remove="Views\SubViews\HexView.xaml" />
+    <None Remove="Views\SubViews\InfoView.xaml" />
     <None Remove="Views\SubViews\TextView.xaml" />
     <None Remove="Views\SettingsView.xaml" />
+    <None Remove="Views\VolumeDashboard.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -106,7 +108,16 @@
   <ItemGroup>
     <Folder Include="Assets\Icons\" />
     <Folder Include="Models\Disks\FileSystems\FAT32\Components\" />
-    <Folder Include="Models\Disks\FileSystems\NTFS\Components\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Views\VolumeDashboard.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Views\SubViews\InfoView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Views\EvidenceDashboard.xaml">

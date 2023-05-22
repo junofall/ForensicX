@@ -3,6 +3,7 @@ using ForensicX.Models.Disks.FileSystems.FAT16B;
 using ForensicX.Models.Disks.FileSystems.FAT32;
 using ForensicX.Models.Disks.FileSystems.NTFS;
 using System;
+using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 
 namespace ForensicX.Models.Factory
@@ -23,7 +24,9 @@ namespace ForensicX.Models.Factory
                     fileSystem = new FAT16BFileSystem(parentVolume);
                     return fileSystem;
                 case 0x07:
-                    return null; // Could be either exFAT or NTFS.
+                    fileSystem = new NTFSFileSystem(parentVolume);
+                    Debug.WriteLine("FileSystem Factory NTFS");
+                    return fileSystem; // *Could* be either exFAT or NTFS.
                 default:
                     //throw new NotSupportedException($"Partition type 0x{partitionType:X2} is not supported.");
                     return null;     

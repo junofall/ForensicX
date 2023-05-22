@@ -21,6 +21,16 @@ using ForensicX.Models.Evidence;
 using Windows.Storage.Streams;
 using ForensicX.Interfaces;
 using System.Diagnostics;
+using System.Collections;
+using System.Text;
+using ForensicX.ViewModels.SubViewModels;
+using ForensicX.Views.SubViews;
+using ForensicX.Controls.Views;
+using ForensicX.Controls.Dialogs;
+using ForensicX.Helpers;
+using ForensicX.Services;
+using Windows.Storage.Pickers;
+using System.Runtime.InteropServices;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -95,27 +105,67 @@ namespace ForensicX.Views
             }
         }
 
-        private void ChildrenGridView_ItemClick(object sender, ItemClickEventArgs e)
+        private async void ChildrenGridView_ItemClick(object sender, ItemClickEventArgs e)
         {
-            if (e.ClickedItem is FileEntry fileEntry && !fileEntry.IsDirectory)
+            try
             {
-                FileSystem fileSystem = fileEntry.FileSystem;
+                if (e.ClickedItem is FileEntry fileEntry && !fileEntry.IsDirectory)
+                {
+                    Debug.WriteLine("ChildrenGridView_ItemClick: fileEntry.Name is '" + fileEntry.Name + "'");
+                    FileSystem fileSystem = fileEntry.FileSystem;
+                    await fileSystem.LoadFileEntryDataAsync(fileEntry);
 
-                // Call ReadFileContents method on the IReadableFileSystem instance in the ViewModel
-                fileSystem.LoadFileEntryData(fileEntry);
+                    Debug.WriteLine("LoadFileEntryDataAsync passed over. Done??");
 
-                // Now the fileEntry object should have the Data property set with the file contents
-                // Print the file data in hex
-                string hexData = BitConverter.ToString(fileEntry.Data).Replace("-", " ");
-                Debug.WriteLine($"File data (hex): {hexData}");
+                    var hexView = this.subviewFrame.Content as HexView;
+
+                    // If the current content is HexView and its DataContext is HexViewModel, set the file
+                    if (hexView != null && hexView.DataContext is HexViewModel hexViewModel)
+                    {
+                        Debug.WriteLine("Setting file for the hexview model...");
+                        await hexViewModel.SetSelectedFile(fileEntry);
+                    }
+                    else
+                    {
+                        var previewView = this.subviewFrame.Content as FileView;
+                        if (previewView != null && previewView.DataContext is PreviewViewModel previewViewModel)
+                        {
+                            Debug.WriteLine("Set selected file for PreviewViewmodel");
+                            await previewViewModel.SetSelectedFile(fileEntry);
+                        }
+                        else
+                        {
+                            var infoView = this.subviewFrame.Content as InfoView;
+                            if (infoView != null && infoView.DataContext is InfoViewModel infoViewModel)
+                            {
+                                Debug.WriteLine("Set selected file for Info View Model");
+                                infoViewModel.SelectedFile = fileEntry;
+                            }
+                        }
+
+                        Debug.WriteLine("Either subviewFrame.Content is not HexView or HexView.DataContext is not HexViewModel");
+                        if (hexView != null)
+                            Debug.WriteLine("HexView.DataContext is: " + hexView.DataContext.GetType());
+                    }
+                }
+                else if(e.ClickedItem is FileEntry dirEntry && dirEntry.IsDirectory)
+                {
+                    Debug.WriteLine("Directory " + dirEntry.Name + " Clicked");
+                }
+                else
+                {
+                    Debug.WriteLine(e.ClickedItem.GetType());
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Debug.WriteLine(e.GetType());
+                Debug.WriteLine("Exception from HomeView.xaml.cs ChildGridView_ItemClick");
+                Debug.WriteLine(ex.Message);
             }
         }
 
-        private void ChildrenGridView_PointerPressed(object sender, PointerRoutedEventArgs e)
+
+        private unsafe void ChildrenGridView_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
             if (e.GetCurrentPoint(sender as UIElement).Properties.IsRightButtonPressed)
             {
@@ -154,10 +204,47 @@ namespace ForensicX.Views
                     {
                         // Add context menu options specific to files
                         var extractMenuItem = new MenuFlyoutItem { Text = "Extract File..." };
-                        extractMenuItem.Click += (s, args) =>
+                        extractMenuItem.Click += async (s, args) =>
                         {
-                            // Handle the extraction logic here
+                            // Use the CoreDispatcher to update the UI on the main thread
+                            var window = (Application.Current as App)?._window as MainWindow;
+
+                            // Retrieve the window handle (HWND) of the current WinUI 3 window.
+                            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+
+                            int hr = Windows.Win32.PInvoke.CoCreateInstance(
+                            typeof(Windows.Win32.UI.Shell.FileOpenDialog).GUID,
+                            null,
+                            Windows.Win32.System.Com.CLSCTX.CLSCTX_INPROC_SERVER,
+                            typeof(Windows.Win32.UI.Shell.IFileOpenDialog).GUID,
+                            out var obj);
+                            if (hr < 0)
+                            {
+                                Marshal.ThrowExceptionForHR(hr);
+                            }
+
+                            Windows.Win32.UI.Shell.IFileOpenDialog fod = (Windows.Win32.UI.Shell.IFileOpenDialog)obj;
+
+                            // Set the dialog to be a folder picker.
+                            fod.SetOptions(Windows.Win32.UI.Shell.FILEOPENDIALOGOPTIONS.FOS_PICKFOLDERS);
+
+                            // Show the dialog.
+                            fod.Show(new Windows.Win32.Foundation.HWND(hWnd));
+
+                            // Get the selected folder.
+                            fod.GetResult(out var ppsi);
+
+                            Windows.Win32.Foundation.PWSTR folderPath;
+                            ppsi.GetDisplayName(Windows.Win32.UI.Shell.SIGDN.SIGDN_FILESYSPATH, &folderPath);
+
+                            // Set the folder path.
+                            var OutputFolderPath = folderPath.ToString();
+                            
+                            var FullDestinationPath = OutputFolderPath + @"\";
+
+                            fileEntry.FileSystem.ExtractFile(fileEntry, FullDestinationPath);
                         };
+
                         contextMenu.Items.Add(extractMenuItem);
                     }
 
@@ -271,6 +358,13 @@ namespace ForensicX.Views
             }
             else if (selectedItem.Content is Partition partition)
             {
+                Debug.WriteLine("UpdateChildrenGridView: Partition selected");
+                EvidenceDashboard.Visibility = Visibility.Collapsed;
+                ChildrenGridView.Visibility = Visibility.Visible;
+            }
+            else if (selectedItem.Content is Volume volume)
+            {
+                Debug.WriteLine("UpdateChildrenGridView: Volume selected");
                 EvidenceDashboard.Visibility = Visibility.Collapsed;
                 ChildrenGridView.Visibility = Visibility.Visible;
             }
@@ -292,35 +386,43 @@ namespace ForensicX.Views
 
         private bool SelectItemInTreeView(IList<TreeViewNode> nodes, BreadcrumbBarFolder targetFolder, string targetPartitionName = null)
         {
-            foreach (TreeViewNode node in nodes)
+            try
             {
-                bool isMatchingNode = node.Content.ToString() == targetFolder.Name;
-                if (targetPartitionName != null && node.Parent != null && node.Parent.Parent.Content != null)
+                foreach (TreeViewNode node in nodes)
                 {
-                    isMatchingNode &= node.Parent.Parent.Content.ToString() == targetPartitionName;
+                    bool isMatchingNode = node.Content.ToString() == targetFolder.Name;
+                    if (targetPartitionName != null && node.Parent != null && node.Parent.Parent.Content != null)
+                    {
+                        isMatchingNode &= node.Parent.Parent.Content.ToString() == targetPartitionName;
+                    }
+
+                    if (isMatchingNode)
+                    {
+                        // Select the matching item and return true
+                        EvidenceTreeView.SelectedNode = node;
+
+                        // Update the ChildrenGridView
+                        UpdateChildrenGridView(node);
+
+                        return true;
+                    }
+
+                    // Recursively search the children nodes
+                    if (SelectItemInTreeView(node.Children, targetFolder, targetPartitionName))
+                    {
+                        // Item found in the children, return true
+                        return true;
+                    }
                 }
 
-                if (isMatchingNode)
-                {
-                    // Select the matching item and return true
-                    EvidenceTreeView.SelectedNode = node;
-
-                    // Update the ChildrenGridView
-                    UpdateChildrenGridView(node);
-
-                    return true;
-                }
-
-                // Recursively search the children nodes
-                if (SelectItemInTreeView(node.Children, targetFolder, targetPartitionName))
-                {
-                    // Item found in the children, return true
-                    return true;
-                }
+                // Item not found in this level, return false
+                return false;
             }
-
-            // Item not found in this level, return false
-            return false;
+            catch (Exception e)
+            {
+                Debug.WriteLine("Exception in breadcrumb:" + e.Message);
+                return false;
+            }
         }
 
         private void ViewModel_DataReady(object sender, EvidenceItem item)
@@ -344,11 +446,15 @@ namespace ForensicX.Views
             // Navigate to the corresponding view based on the tag.
             switch (tag)
             {
+                case "InfoView":
+                    subviewFrame.Navigate(typeof(SubViews.InfoView));
+                    break;
                 case "TextView":
                     subviewFrame.Navigate(typeof(SubViews.TextView));
                     break;
                 case "HexView":
                     subviewFrame.Navigate(typeof(SubViews.HexView));
+                    Debug.WriteLine("Navigated to HexView");
                     break;
                 case "DiskView":
                     subviewFrame.Navigate(typeof(SubViews.DiskView));
@@ -374,9 +480,9 @@ namespace ForensicX.Views
 
         }
 
-        public void HashCalculator_Click(object sender, RoutedEventArgs e)
+        public void ConvertToVhd_Click(object sender, RoutedEventArgs e)
         {
-
+            ViewModel.ConvertToVhd();
         }
 
         public void FileSignatureAnalyzer_Click(object sender, RoutedEventArgs e)
@@ -407,6 +513,11 @@ namespace ForensicX.Views
 
         }
         public void AddEvidenceItem_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        public void FullExtraction_Click(object sender, RoutedEventArgs e)
         {
 
         }
