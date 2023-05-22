@@ -1,9 +1,4 @@
-// Copyright (c) Microsoft Corporation and Contributors.
-// Licensed under the MIT License.
-
-using ForensicX.ViewModels;
-using ForensicX.ViewModels.SubViewModels;
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
@@ -21,18 +16,13 @@ using Windows.Foundation.Collections;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace ForensicX.Views.SubViews
+namespace ForensicX.Views
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    public sealed partial class HexView : Page
+    public sealed partial class VolumeDashboard : UserControl
     {
-        private HexViewModel viewModel;
-        public HexView()
+        public VolumeDashboard()
         {
             this.InitializeComponent();
-            this.DataContext = new HexViewModel();
         }
     }
 }

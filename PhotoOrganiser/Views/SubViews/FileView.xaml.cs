@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml;
+﻿using ForensicX.ViewModels.SubViewModels;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
@@ -26,6 +27,7 @@ namespace ForensicX.Views.SubViews
         public FileView()
         {
             this.InitializeComponent();
+            this.DataContext = new PreviewViewModel();
         }
     }
 }

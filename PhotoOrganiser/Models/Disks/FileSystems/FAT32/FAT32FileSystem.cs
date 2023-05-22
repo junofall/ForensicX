@@ -21,7 +21,22 @@ namespace ForensicX.Models.Disks.FileSystems.FAT32
             ParentDisk = ParentPartition.ParentDisk;
         }
 
+        public override void ExtractAll()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void ExtractFile(FileEntry file, string directoryPath)
+        {
+            throw new NotImplementedException();
+        }
+
         public override void LoadFileEntryData(FileEntry file)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task LoadFileEntryDataAsync(FileEntry file)
         {
             throw new NotImplementedException();
         }

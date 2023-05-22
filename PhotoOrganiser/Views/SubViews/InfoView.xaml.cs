@@ -1,8 +1,4 @@
-// Copyright (c) Microsoft Corporation and Contributors.
-// Licensed under the MIT License.
-
-using ForensicX.ViewModels;
-using ForensicX.ViewModels.SubViewModels;
+﻿using ForensicX.ViewModels.SubViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -26,13 +22,12 @@ namespace ForensicX.Views.SubViews
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class HexView : Page
+    public sealed partial class InfoView : Page
     {
-        private HexViewModel viewModel;
-        public HexView()
+        public InfoView()
         {
             this.InitializeComponent();
-            this.DataContext = new HexViewModel();
+            this.DataContext = new InfoViewModel();
         }
     }
 }

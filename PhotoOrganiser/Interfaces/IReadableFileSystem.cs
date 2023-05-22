@@ -10,5 +10,7 @@ namespace ForensicX.Interfaces
     public interface IReadableFileSystem
     {
         void LoadFileEntryData(FileEntry file);
+
+        Task LoadFileEntryDataAsync(FileEntry file);
     }
 }

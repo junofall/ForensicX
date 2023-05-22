@@ -21,7 +21,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe8b7;" FontSize="48" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10"/>
+                <Image Source="ms-appx:///Assets/Icons/folder.png" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10"/>
                 <TextBlock Text="{x:Bind Name}" Grid.Row="1" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Top" MaxWidth="100" Margin="0,5,0,0"/>
             </Grid>
         </DataTemplate>
@@ -32,14 +32,16 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe8a5;" FontSize="48" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10"/>
                 <TextBlock Text="{x:Bind Name}" Grid.Row="1" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Top" MaxWidth="90" Margin="0,5,0,0"/>
+                <Image Source="{x:Bind Extension, Converter={StaticResource FileExtensionToImageConverter}}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10"/>
+                
             </Grid>
         </DataTemplate>
 
         <ts:FileEntryTemplateSelector x:Key="FileEntryTemplateSelector"
         DirectoryTemplate="{StaticResource DirectoryTemplate}"
         FileTemplate="{StaticResource FileTemplate}" />
+        <converter:FileExtensionToImageConverter x:Key="FileExtensionToImageConverter" />
     </Page.Resources>
 
     
@@ -103,9 +105,8 @@
             </MenuBarItem>
 
             <MenuBarItem Title="Tools">
-                <MenuFlyoutItem Text="Hash Calculator" Click="HashCalculator_Click"/>
-                <MenuFlyoutItem Text="File Signature Analyzer" Click="FileSignatureAnalyzer_Click"/>
-                <MenuFlyoutItem Text="Data Recovery" Click="DataRecovery_Click"/>
+                <MenuFlyoutItem Text="VHD Converter" Click="ConvertToVhd_Click"/>
+                <MenuFlyoutItem Text="Full Extraction" Click="FullExtraction_Click"/>
             </MenuBarItem>
 
             <MenuBarItem Title="Help">
@@ -150,7 +151,7 @@
                 </Grid>
             </Grid>
 
-            <Grid Grid.Column="1">
+            <Grid Grid.Column="1" MinHeight="250">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -195,7 +196,7 @@
                     </StackPanel>
                 </StackPanel>
 
-                <Grid Grid.Row="2" x:Name="FileExplorerViewBody" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="8" Margin="0,10,0,0">
+                <Grid Grid.Row="2" x:Name="FileExplorerViewBody" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="8" Margin="0,10,0,0" >
                     <!-- Bind your ListView items here, configure the layout to be similar to Windows Explorer -->
                     <GridView x:Name="ChildrenGridView" Visibility="Collapsed" Margin="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Padding="0" ItemTemplateSelector="{StaticResource FileEntryTemplateSelector}" ScrollViewer.VerticalScrollBarVisibility="Auto" ItemClick="ChildrenGridView_ItemClick" IsItemClickEnabled="True" PointerPressed="ChildrenGridView_PointerPressed">
                         <GridView.ItemsPanel>
@@ -211,10 +212,36 @@
 
                 <NavigationView x:Name="subviewNavigation" PaneDisplayMode="Top"  SelectionFollowsFocus="Disabled" IsBackButtonVisible="Collapsed" Grid.Row="3" IsSettingsVisible="False" SelectionChanged="SubviewNavigated_SelectionChanged">
                     <NavigationView.MenuItems>
-                        <NavigationViewItem Icon="Character" Content="Text" x:Name="TextViewNavItem" ToolTipService.ToolTip="Text view" Tag="TextView"/>
-                        <NavigationViewItem Icon="Memo" Content="Hex" x:Name="HexViewNavItem" ToolTipService.ToolTip="Hex view" Tag="HexView"/>
-                        <NavigationViewItem Icon="MapDrive" Content="Disk" x:Name="DriveViewNavItem" ToolTipService.ToolTip="Disk view" Tag="DiskView"/>
-                        <NavigationViewItem Icon="OpenFile" Content="File" x:Name="FileViewNavItem" ToolTipService.ToolTip="File view" Tag="FileView"/>
+                        <NavigationViewItem Content="None" x:Name="TextViewNavItem" ToolTipService.ToolTip="Text view" Tag="TextView"/>
+                        <NavigationViewItem Content="Information" x:Name="InfoViewNavItem" ToolTipService.ToolTip="Info view" Tag="InfoView">
+                            <NavigationViewItem.Icon>
+                                <FontIcon
+                                    FontFamily="Segoe MDL2 Assets" 
+                                    Glyph="&#xe946;"/>
+                            </NavigationViewItem.Icon>
+                        </NavigationViewItem>
+                        
+                        <NavigationViewItem Content="Hex" x:Name="HexViewNavItem" ToolTipService.ToolTip="Hex view" Tag="HexView">
+                            <NavigationViewItem.Icon>
+                                <FontIcon
+                                    FontFamily="Segoe MDL2 Assets" 
+                                    Glyph="&#xe943;"/>
+                            </NavigationViewItem.Icon>
+                        </NavigationViewItem>
+                        <NavigationViewItem Content="Disk" x:Name="DriveViewNavItem" ToolTipService.ToolTip="Disk view" Tag="DiskView">
+                            <NavigationViewItem.Icon>
+                                <FontIcon
+                                    FontFamily="Segoe MDL2 Assets" 
+                                    Glyph="&#xeda2;"/>
+                            </NavigationViewItem.Icon>
+                        </NavigationViewItem>
+                        <NavigationViewItem Content="Preview" x:Name="FileViewNavItem" ToolTipService.ToolTip="Preview" Tag="FileView">
+                            <NavigationViewItem.Icon>
+                                <FontIcon
+                                    FontFamily="Segoe MDL2 Assets" 
+                                    Glyph="&#xe8ff;"/>
+                            </NavigationViewItem.Icon>
+                        </NavigationViewItem>
                     </NavigationView.MenuItems>
                     <Frame x:Name="subviewFrame"/>
                 </NavigationView>

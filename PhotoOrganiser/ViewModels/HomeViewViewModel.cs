@@ -54,6 +54,7 @@ namespace ForensicX.ViewModels
 
         public ICommand AddEvidenceCommand { get; }
         public ICommand RemoveEvidenceCommand { get; }
+        public ICommand ExtractFileCommand { get; }
 
         public HomeViewViewModel()
         {
@@ -72,6 +73,29 @@ namespace ForensicX.ViewModels
             else
             {
                 System.Diagnostics.Debug.WriteLine("Cannot remove, item is null.");
+            }
+        }
+
+        public async void ConvertToVhd()
+        {
+            try
+            {
+                var window = (Application.Current as App)?._window as MainWindow;
+
+                // Retrieve the window handle (HWND) of the current WinUI 3 window.
+                var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+
+                string selectedFilePath = await PickFileAsync(hWnd);
+
+                if (!string.IsNullOrEmpty(selectedFilePath))
+                {
+                    Debug.WriteLine("Converting to fixed VHD.");
+                    VhdConverter.ConvertToFixedVhd(selectedFilePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Exception: " + ex.Message);
             }
         }
 
@@ -113,6 +137,48 @@ namespace ForensicX.ViewModels
                 Debug.WriteLine("Exception: " + ex.Message);
             }
         }
+
+
+        private async void ExtractFile(FileEntry fileEntry)
+        {
+            try
+            {
+                var window = (Application.Current as App)?._window as MainWindow;
+
+                // Retrieve the window handle (HWND) of the current WinUI 3 window.
+                var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+
+                string selectedFilePath = await PickFileAsync(hWnd);
+
+                if (!string.IsNullOrEmpty(selectedFilePath))
+                {
+                    OnIsAddingEvidenceItemChanged(true);
+
+                    // Create a new EvidenceItem and add it to the EvidenceItems collection
+                    var evidenceItem = new DiskImageEvidence { Name = Path.GetFileName(selectedFilePath), Path = selectedFilePath };
+                    await evidenceItem.LoadAsync();
+                    await evidenceItem.DiskInstance.InitializeAsync();
+                    evidenceItem.Children = new ObservableCollection<Partition>();
+                    foreach (Partition p in evidenceItem.DiskInstance.Partitions)
+                    {
+                        evidenceItem.Children.Add(p);
+                        Debug.WriteLine("Partition Added");
+                    };
+
+                    window.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        EvidenceItems.Add(evidenceItem);
+                        OnDataReady(evidenceItem);
+                        OnIsAddingEvidenceItemChanged(false);
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Exception: " + ex.Message);
+            }
+        }
+
 
         private async Task<string> PickFileAsync(IntPtr hWnd)
         {

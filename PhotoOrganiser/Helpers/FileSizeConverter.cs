@@ -21,6 +21,18 @@ public class FileSizeConverter : IValueConverter
 
             return $"{adjustedSize} {SizeSuffixes[suffixIndex]}";
         }
+        else if (value is string sizeInBytesStr && ulong.TryParse(sizeInBytesStr, out ulong sizeInBytes2))
+        {
+            if (sizeInBytes2 == 0)
+            {
+                return "0 bytes";
+            }
+
+            var suffixIndex = (int)Math.Floor(Math.Log(sizeInBytes2, 1024));
+            var adjustedSize = Math.Round(sizeInBytes2 / Math.Pow(1024, suffixIndex), 2);
+
+            return $"{adjustedSize} {SizeSuffixes[suffixIndex]}";
+        }
 
         return "N/A";
     }

@@ -18,5 +18,11 @@ namespace ForensicX.Models.Disks
         public ulong FreeSpace { get; set; }
 
         public abstract void LoadFileEntryData(FileEntry file);
+
+        public abstract Task LoadFileEntryDataAsync(FileEntry file);
+
+        public abstract void ExtractFile(FileEntry file, string directoryPath);
+        public abstract void ExtractAll();
+
     }
 }
